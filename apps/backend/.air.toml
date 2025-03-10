@@ -1,6 +1,6 @@
 [build]
   cmd = "go build -o ./tmp/main.exe ."
   bin = "tmp/main.exe"
-  full_bin = "APP_ENV=dev tmp/main.exe"
+  full_bin = "set APP_ENV=dev && tmp/main.exe"
   include_ext = ["go"]
   exclude_dir = ["tmp", "vendor"]

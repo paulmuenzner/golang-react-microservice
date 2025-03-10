@@ -1,7 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",        // Zielordner für die kompilierten Dateien
+    "declaration": true,     // Generiere die TypeScript-Typendateien (.d.ts)
+    "declarationDir": "dist",// Speichere die Typen ebenfalls im dist-Ordner
+    "moduleResolution": "node", // Wichtige Option für Modulauflösung
+    "esModuleInterop": true, // Falls du mit CommonJS und ES-Modulen mischst
+    "strict": true           // Optional: Aktiviert strenge TypeScript-Optionen
   },
-  "include": ["src"]
+  "include": ["src/**/*"]  
 }
