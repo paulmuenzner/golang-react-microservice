@@ -13,16 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func setSecurityHeaders(c *gin.Context) {
-	// Manually add security headers
-	c.Header("Strict-Transport-Security", "max-age=31536000")                                       // HSTS for 1 year
-	c.Header("X-Frame-Options", "DENY")                                                             // Prevent iframe embedding
-	c.Header("X-XSS-Protection", "1; mode=block")                                                   // Enable XSS protection
-	c.Header("X-Content-Type-Options", "nosniff")                                                   // Prevent MIME type sniffing
-	c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'") // CSP
-	c.Header("Referrer-Policy", "no-referrer")                                                      // Referrer policy
-	c.Next()
-}
+
 
 // Globale MongoDB-Variable
 var client *mongo.Client
@@ -35,16 +26,11 @@ func main() {
 	// Gin-Engine erstellen
 	r := gin.Default()
 
-	// CORS settings
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://your-frontend.com"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		AllowCredentials: true,
-	}))
+	// 1️⃣ Apply CORS middleware (Handles cross-origin requests)
+	r.Use(cors.New(config.CorsConfig()))
 
-	// Apply the custom middleware to set security headers
-	r.Use(setSecurityHeaders)
+	// 2️⃣ Apply security headers middleware
+	r.Use(config.SecurityHeadersMiddleware()) 
 
 	////// ENV //////////////////////////////////
 	// Initialize configuration (load .env file)

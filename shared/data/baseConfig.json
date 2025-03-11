@@ -1,0 +1,5 @@
+{
+    "appName": "MyApp",
+    "version": "1.0.0",
+    "apiEndpoint": "https://api.myapp.com"
+}
