@@ -13,8 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-
-
 // Globale MongoDB-Variable
 var client *mongo.Client
 
@@ -30,7 +28,7 @@ func main() {
 	r.Use(cors.New(config.CorsConfig()))
 
 	// 2️⃣ Apply security headers middleware
-	r.Use(config.SecurityHeadersMiddleware()) 
+	r.Use(config.SecurityHeadersMiddleware())
 
 	////// ENV //////////////////////////////////
 	// Initialize configuration (load .env file)

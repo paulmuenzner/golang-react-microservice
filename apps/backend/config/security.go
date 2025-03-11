@@ -1,16 +1,29 @@
 package config
 
-import "github.com/gin-gonic/gin"
+import (
+	"backend/interfaces"
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
 
 // SecurityHeadersMiddleware adds security-related HTTP headers to responses
 func SecurityHeadersMiddleware() gin.HandlerFunc {
+	var baseConfig interfaces.BaseConfig
+
+	// Load the config
+	err := LoadConfig("../shared/data/baseConfig.json", &baseConfig)
+	if err != nil {
+		log.Fatal("Failed to load baseConfig.json:", err)
+	}
+
+	// Get security headers from config
+	securityHeaders := baseConfig.SecurityHeaders
+
 	return func(c *gin.Context) {
-		c.Header("Strict-Transport-Security", "max-age=31536000")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("X-XSS-Protection", "1; mode=block")
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
-		c.Header("Referrer-Policy", "no-referrer")
+		for key, value := range securityHeaders {
+			c.Header(key, value)
+		}
 		c.Next()
 	}
 }

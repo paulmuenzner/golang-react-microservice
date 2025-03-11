@@ -1,6 +1,8 @@
 package config
 
 import (
+	"backend/interfaces"
+	"log"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -8,11 +10,22 @@ import (
 
 // CorsConfig returns a configured CORS middleware
 func CorsConfig() cors.Config {
+	var baseConfig interfaces.BaseConfig
+
+	// Load the config
+	err := LoadConfig("../shared/data/baseConfig.json", &baseConfig)
+	if err != nil {
+		log.Fatal("Failed to load baseConfig.json:", err)
+	}
+
+	// Extract CORS settings
+	corsConfig := baseConfig.Cors
+
 	return cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://your-frontend.com"}, // Allowed origins
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},                       // Allowed HTTP methods
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},            // Allowed headers
-		AllowCredentials: true,                                                           // Allow cookies and credentials
-		MaxAge:           12 * time.Hour,                                                 // Cache the preflight response
+		AllowOrigins:     corsConfig.AllowOrigins, // Allowed origins
+		AllowMethods:     corsConfig.AllowMethods, // Allowed HTTP methods
+		AllowHeaders:     corsConfig.AllowHeaders, // Allowed headers
+		AllowCredentials: true,                    // Allow cookies and credentials
+		MaxAge:           12 * time.Hour,          // Cache the preflight response
 	}
 }
