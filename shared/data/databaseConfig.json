@@ -1,0 +1,6 @@
+{
+  "userAuthCollectionName": "user_auth",
+  "collectionNameFiles": "files",
+  "collectionNamePhotovoltaicPlant": "pv_plants",
+  "collectionNamePlantLoggerConfig": "plant_logger_config"
+}

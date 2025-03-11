@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,12 @@ func main() {
 
 	// Gin-Engine erstellen
 	r := gin.Default()
+
+	////// RATE LIMIT ///////////////////////////////
+	// Create rate limiter with 10 requests per minute and 10 minutes cooldown
+	rateLimiter := config.NewRateLimiter(10, time.Minute, 10*time.Minute)
+	// Start a goroutine to reset the requests every minute
+	go rateLimiter.ResetRequests()
 
 	// 1️⃣ Apply CORS middleware (Handles cross-origin requests)
 	r.Use(cors.New(config.CorsConfig()))
