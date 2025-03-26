@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev:frontend": "npm --prefix apps/frontend run dev",
-    "dev:admin": "npm --prefix apps/admin run dev",
-    "dev:go-backend": "cd apps/backend && air",
-    "dev:shared": "npm --prefix shared run build",
+    "dev:public": "npm --prefix apps/frontend/public run dev",
+    "dev:auth": "npm --prefix apps/frontend/auth run dev",
+    "dev:shared": "npm --prefix apps/frontend/shared run build",
+    "dev:go-backend": "cd apps/backend/golang && air",
     "dev": "npm-run-all --parallel dev:*",
-    "build:shared": "npm --prefix shared run build",
-    "build:admin": "npm --prefix apps/admin run build",
-    "build:frontend": "npm --prefix apps/frontend run build",
+    "build:public": "npm --prefix apps/frontend/public run build",
+    "build:auth": "npm --prefix apps/frontend/auth run build",
+    "build:shared": "npm --prefix apps/frontend/shared run build",
     "build": "npm-run-all --parallel build:*"
   },
   "keywords": [],
@@ -20,8 +20,7 @@
   "workspaces": {
     "packages": [
       "apps/frontend/*",
-      "apps/backend/*",
-      "shared"
+      "apps/backend/*"
     ]
   },
   "description": "",

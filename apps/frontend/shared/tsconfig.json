@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "skipLibCheck": true,
+    "baseUrl": ".", 
+    "outDir": "dist",        // Target folder for the compiled files
+    "rootDir": "src",        // Source root for TypeScript
+    "declaration": true,     // Generate TypeScript declaration files (.d.ts)
+    "declarationDir": "dist",// Save the types also in the dist folder
+    "moduleResolution": "node", // Important option for module resolution
+    "esModuleInterop": true, // In case you're mixing CommonJS and ES modules
+    "strict": true           // Optional: Enables strict TypeScript options
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]  
+}
