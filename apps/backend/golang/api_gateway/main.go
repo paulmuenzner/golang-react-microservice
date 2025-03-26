@@ -9,6 +9,6 @@ import (
 
 func main() {
 	currentTime := date.GetCurrentUTCTime()
-	logger.Info("Starte user_service")
+	logger.Info("Start api_gateway")
 	fmt.Println("Current timet:", date.FormatDate(currentTime))
 }

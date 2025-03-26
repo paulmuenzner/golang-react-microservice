@@ -1,6 +1,11 @@
 [build]
-  cmd = "go build -o ./tmp/main.exe ."
+  cmd = "go run ." 
   bin = "tmp/main.exe"
   full_bin = "tmp/main.exe"
   include_ext = ["go"]
-  exclude_dir = ["tmp", "vendor"]
+  exclude_dir = ["tmp", "vendor", ".git"]
+
+[paths]
+  # Wichtige Verzeichnisse zum Überwachen
+  include = ["api_gateway", "modules/user_service", "shared"]
+

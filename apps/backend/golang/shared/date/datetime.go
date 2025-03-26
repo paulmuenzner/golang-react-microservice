@@ -7,5 +7,5 @@ func GetCurrentUTCTime() time.Time {
 }
 
 func FormatDate(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05")
+	return t.Format("02. January 2006 15:04:05")
 }

@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  api_gateway:
+    build:
+      context: ./api_gateway
+    command: air
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api_gateway:/app
+      - ./shared:/shared
+
+  user_service:
+    build:
+      context: ./modules/user_service
+    command: air
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./modules/user_service:/app
+      - ./shared:/shared
+
+
