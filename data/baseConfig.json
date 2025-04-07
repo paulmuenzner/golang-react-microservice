@@ -1,4 +1,5 @@
 {
     "appName": "MyApp",
-    "apiEndpoint": "https://api.myapp.com"
+    "apiEndpoint": "https://api.myapp.com",
+    "backendPort": "8080"
 }

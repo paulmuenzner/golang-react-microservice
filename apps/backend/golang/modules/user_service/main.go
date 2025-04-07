@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/paulmuenzner/shared/date"
-	"github.com/paulmuenzner/shared/logger"
+	logger "github.com/paulmuenzner/shared/logging"
 )
 
 func main() {

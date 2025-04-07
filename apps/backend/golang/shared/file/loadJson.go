@@ -1,16 +1,10 @@
-package config
+package file
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
 )
-
-type Config struct {
-	AppName     string `json:"appName"`
-	Version     string `json:"version"`
-	ApiEndpoint string `json:"apiEndpoint"`
-}
 
 // Load json
 func LoadJson(filePath string, configStruct interface{}) error {

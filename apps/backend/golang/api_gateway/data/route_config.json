@@ -1,0 +1,4 @@
+{
+    "userServiceUrl": "localhost:50051",
+    "authServiceUrl": "localhost:50052"
+}
