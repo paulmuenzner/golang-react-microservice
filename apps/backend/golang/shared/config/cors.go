@@ -1,9 +1,10 @@
 package config
 
 import (
-	"backend/interfaces"
 	"log"
 	"time"
+
+	"github.com/paulmuenzner/shared/interfaces"
 
 	"github.com/gin-contrib/cors"
 )

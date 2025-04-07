@@ -1,8 +1,9 @@
 package config
 
 import (
-	"backend/interfaces"
 	"log"
+
+	"github.com/paulmuenzner/shared/interfaces"
 
 	"github.com/gin-gonic/gin"
 )

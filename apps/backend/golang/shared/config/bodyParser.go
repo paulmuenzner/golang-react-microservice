@@ -3,7 +3,7 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +13,7 @@ import (
 func ParseRequestBodyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Read the entire request body
-		body, err := ioutil.ReadAll(c.Request.Body)
+		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			log.Println("Error reading request body:", err)
 			c.JSON(400, gin.H{"error": "Cannot read request body"})
@@ -22,7 +22,7 @@ func ParseRequestBodyMiddleware() gin.HandlerFunc {
 		}
 
 		// Re-set the body to allow other handlers to read it if needed
-		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		// Use a map to store any kind of JSON object
 		var parsedBody map[string]interface{}
