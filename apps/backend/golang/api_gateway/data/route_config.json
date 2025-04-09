@@ -1,5 +1,12 @@
 {
-    "userServicePort": "50051",
-    "authServicePort": "50052",
-    "loggingServicePort": "50053"
+    "local": {
+        "USER_SERVICE_URL": "localhost:50051",
+        "AUTH_SERVICE_URL": "localhost:50052",
+        "LOGGING_SERVICE_URL": "localhost:50053"
+    },
+    "k8s": {
+        "USER_SERVICE_URL": "user-service.default.svc.cluster.local:50051",
+        "AUTH_SERVICE_URL": "auth-service.default.svc.cluster.local:50052",
+        "LOGGING_SERVICE_URL": "logging-service.default.svc.cluster.local:50053"
+    }
 }
