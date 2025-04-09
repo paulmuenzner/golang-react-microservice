@@ -6,7 +6,7 @@
     "dev:public": "npm --prefix apps/frontend/public run dev",
     "dev:auth": "npm --prefix apps/frontend/auth run dev",
     "dev:shared": "npm --prefix apps/frontend/shared run build",
-    "dev:go-backend": "cd apps/backend/golang && air",
+    "dev:go-backend": "cd apps/backend/golang/api_gateway && air",
     "dev": "npm-run-all --parallel dev:*",
     "build:public": "npm --prefix apps/frontend/public run build",
     "build:auth": "npm --prefix apps/frontend/auth run build",

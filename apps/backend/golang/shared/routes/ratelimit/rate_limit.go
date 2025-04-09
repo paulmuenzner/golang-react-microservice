@@ -1,5 +1,5 @@
-// config/rate_limit.go
-package config
+// shared/routes/rate_limit.go
+package ratelimit
 
 import (
 	"net/http"

@@ -1,8 +1,7 @@
-package main
+package config
 
 import (
 	"fmt"
-	"log"
 
 	file "github.com/paulmuenzner/shared/file" // Importing the shared package
 )
@@ -22,14 +21,14 @@ func LoadRouteConfig() (*RouteConfig, error) {
 	return &routeCfg, nil
 }
 
-func main() {
-	// Load the route config
-	routeCfg, err := LoadRouteConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+// func main() {
+// 	// Load the route config
+// 	routeCfg, err := LoadRouteConfig()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	// Use the loaded config
-	fmt.Printf("User Service URL: %s\n", routeCfg.UserServiceURL)
-	fmt.Printf("Auth Service URL: %s\n", routeCfg.AuthServiceURL)
-}
+// 	// Use the loaded config
+// 	fmt.Printf("User Service URL: %s\n", routeCfg.UserServiceURL)
+// 	fmt.Printf("Auth Service URL: %s\n", routeCfg.AuthServiceURL)
+// }

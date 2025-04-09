@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/paulmuenzner/api_gateway/config"
 	"github.com/paulmuenzner/api_gateway/routes"
 	"github.com/paulmuenzner/shared/date"
 	logger "github.com/paulmuenzner/shared/logging"
@@ -12,7 +13,15 @@ import (
 
 func main() {
 	// Initialize logger
-	logger.Info("Start api_gateway")
+	logger.Info("Start api_gateway now")
+
+	// Load the route base
+	baseCfg, err := config.LoadBaseConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Setting up UserService routes")
 
 	// Initialize Gin router
 	r := gin.Default()
@@ -20,9 +29,10 @@ func main() {
 	// Setup routes for the API Gateway
 	routes.SetupUserServiceRoutes(r)
 	routes.SetupAuthServiceRoutes(r)
+	routes.SetupLoggingServiceRoutes(r)
 
 	// Start server
-	port := "8080" // You can use environment variables or a config file
+	port := baseCfg.BackendPort
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start API Gateway: %v", err)
 	}

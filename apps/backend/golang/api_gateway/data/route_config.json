@@ -1,4 +1,5 @@
 {
-    "userServiceUrl": "localhost:50051",
-    "authServiceUrl": "localhost:50052"
+    "userServicePort": "50051",
+    "authServicePort": "50052",
+    "loggingServicePort": "50053"
 }

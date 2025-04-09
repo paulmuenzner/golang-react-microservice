@@ -1,0 +1,8 @@
+###################
+# RATE LIMIT
+############
+
+# user
+"userRateLimitMaxRequests": "20"
+"userRateLimitInterval": "60"
+"userRateLimitCooldownDuration": "600"
