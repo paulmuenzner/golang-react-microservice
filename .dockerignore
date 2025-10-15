@@ -1,0 +1,38 @@
+# GENERAL DEVELOPMENT ARTIFACTS
+.git
+.gitignore
+.vscode/
+.DS_Store
+
+node_modules/
+
+# Go Dependencies
+vendor/
+
+# Air and General Temporary Folders
+tmp/
+
+# Compiled Go Binaries
+main
+runner
+*.exe
+*.log
+*.swp
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+venv/
+env/
+pycache/
+*.pyc
+.pytest_cache/
+
+# Node
+.next/
+dist/
+build/
+out/

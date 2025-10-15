@@ -1,0 +1,61 @@
+# Go build artifacts
+**/tmp/
+**/bin/
+vendor/
+
+# Test and coverage
+*.test
+*.out
+coverage.html
+
+# Go workspace (optional, not committed)
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# NODE/REACT/JS ARTIFACTS
+node_modules/
+build/
+dist/
+out/
+npm-debug.log*
+package-lock.json
+.parcel-cache/
+.next/
+.turbo/
+.cache/
+
+# Python environments
+venv/
+env/
+
+# Python compiled Files and Cache
+pycache/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Misc
+config.mk
+
+# ---- VS Code ----
+.vscode/
+.history/
+*.code-workspace
