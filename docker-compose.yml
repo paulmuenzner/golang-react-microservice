@@ -6,7 +6,9 @@ services:
     build:
       context: . # Root context (important!)
       dockerfile: app/backend/service-a/Dockerfile
-      target: dev # Use dev stage with Air
+      target: dev 
+      args:
+        GO_VERSION: ${GO_VERSION}
     container_name: service-a-dev
     ports:
       - "8080:8080"
@@ -22,7 +24,9 @@ services:
     build:
       context: . # Root context (important!)
       dockerfile: app/backend/service-b/Dockerfile
-      target: dev # Use dev stage with Air
+      target: dev
+      args:
+        GO_VERSION: ${GO_VERSION}
     container_name: service-b-dev
     ports:
       - "8081:8081"

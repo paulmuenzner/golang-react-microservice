@@ -1,3 +1,7 @@
+
+# Central version management
+GO_VERSION ?= 1.25
+
 .PHONY: help init dev dev-a dev-b dev-g test lint prod prod-up prod-stop stop clean delete stat info storage
 
 .DEFAULT_GOAL := help
@@ -22,7 +26,7 @@ install-tools: ## Install development tools (golangci-lint, air)
 
 
 init: ## Initialize Go modules for all services
-	@echo "🔧 Initializing Go modules..."
+	@echo "🔧 Initializing (Go ${GO_VERSION})..."
 	@cd shared/go && go mod tidy
 	@cd app/backend/service-a && go mod tidy
 	@cd app/backend/service-b && go mod tidy
@@ -40,20 +44,20 @@ dev-local:
 	@echo ""
 
 dev: ## Start all services in development mode with hot-reload
-	@echo "🐳 Starting all services with hot-reload..."
-	podman-compose up --build
+	@echo "🐳 Starting services (Go ${GO_VERSION})..."
+	GO_VERSION=${GO_VERSION} podman-compose up --build
 
 dev-a: ## Start only service-a in development mode
-	@echo "🐳 Starting service-a only..."
+	@echo "🐳 Starting service-a only (Go ${GO_VERSION})..."
 	podman-compose up service-a
 
 dev-b: ## Start only service-b in development mode
-	@echo "🐳 Starting service-b only..."
-	podman-compose up service-b
+	@echo "🐳 Starting service-b only (Go ${GO_VERSION})..."
+	GO_VERSION=${GO_VERSION} podman-compose up service-b
 
 dev-g: ## Start only gateway in development mode
-	@echo "🐳 Starting gateway only..."
-	podman-compose up gateway
+	@echo "🐳 Starting gateway only (Go ${GO_VERSION})..."
+	GO_VERSION=${GO_VERSION} podman-compose up gateway
 
 lint: ## Run golangci-lint on all Go code
 	@echo "🔍 Running linters..."
@@ -71,18 +75,10 @@ fmt: ## Format all Go code
 	@cd app/backend/gateway && go fmt ./...
 	@echo "✅ Formatting complete!"
 
-prod:
-	@echo "🏗️ Building production images..."
-	podman-compose build service-a
-	podman-compose build service-b
-	podman-compose build gateway
-	@echo "✅ Production images built!"
-	@echo ""
-	@echo "Run with: podman-compose -f docker-compose.prod.yml up"
-
 prodnew: ## Build production Docker images
 	@echo "🏗️  Building production images..."
-	podman-compose -f docker-compose.prod.yml build
+	podman-compose -f docker-compose.prod.yml build \
+		--build-arg GO_VERSION=${GO_VERSION}
 	@echo "✅ Production images built!"
 
 prod-up: prod ## Start production containers

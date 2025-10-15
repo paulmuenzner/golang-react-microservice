@@ -1,8 +1,10 @@
+ARG GO_VERSION
+
 ###############################################
 ################# DEVELOPMENT #################
 ###############################################
 # Development stage with Air hot-reload
-FROM docker.io/library/golang:1.25-alpine AS dev
+FROM docker.io/library/golang:${GO_VERSION}-alpine AS dev
 
 WORKDIR /build
 
@@ -27,7 +29,7 @@ CMD ["air", "-c", ".air.toml"]
 ################# PRODUCTION ##################
 ###############################################
 # Production build stage
-FROM docker.io/library/golang:1.25-alpine AS builder
+FROM docker.io/library/golang:${GO_VERSION}-alpine AS builder
 
 WORKDIR /build
 
