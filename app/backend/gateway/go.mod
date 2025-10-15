@@ -1,7 +1,6 @@
-// gateway/go.mod
 module github.com/company/gateway
 
-go 1.22
+go 1.23
 
 require github.com/company/shared/go v0.0.0
 

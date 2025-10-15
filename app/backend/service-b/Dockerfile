@@ -1,3 +1,7 @@
+###############################################
+################# DEVELOPMENT #################
+###############################################
+
 # Development stage with Air hot-reload
 FROM docker.io/library/golang:1.25-alpine AS dev
 
@@ -8,22 +12,21 @@ RUN go install github.com/air-verse/air@latest
 
 # Copy shared library and service (maintain monorepo structure)
 COPY shared/ ./shared/
-COPY app/backend/service-b/ ./service-b/
-
-# Overwrite go.mod with container-specific version
-COPY app/backend/service-b/go.mod.container ./service-b/go.mod
+COPY app/backend/service-b/ ./app/backend/service-b/
 
 # Work in service directory
-WORKDIR /build/service-b
+WORKDIR /build/app/backend/service-b
 
 # Download dependencies (replace directive works because ../shared exists)
 RUN go mod download
 
-# Air will watch for changes
-# CMD ["air", "-c", ".air.toml"]
-# CMD ["/bin/sh", "-c", "sed -i 's|../../../shared/go|../shared/go|g' go.mod && air -c .air.toml"]
-CMD ["/bin/sh", "-c", "sed 's|../../../shared/go|../shared/go|g' go.mod > /tmp/go.mod && sed -i 's|go build|go build -modfile /tmp/go.mod|g' .air.toml && air -c .air.toml"]
+# Start Air 
+CMD ["air", "-c", ".air.toml"]
 
+
+###############################################
+################# PRODUCTION ##################
+###############################################
 # Production build stage
 FROM docker.io/library/golang:1.25-alpine AS builder
 
@@ -31,12 +34,9 @@ WORKDIR /build
 
 # Copy shared library and service
 COPY shared/ ./shared/
-COPY app/backend/service-b/ ./service-b/
+COPY app/backend/service-b/ ./app/backend/service-b/
 
-# Overwrite go.mod with container-specific version
-COPY app/backend/service-b/go.mod.container ./service-b/go.mod
-
-WORKDIR /build/service-b
+WORKDIR /build/app/backend/service-b
 
 # Download dependencies
 RUN go mod download
@@ -47,6 +47,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main .
 # Final production image
 FROM scratch
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /build/service-b/main /main
 
 ENTRYPOINT ["/main"]

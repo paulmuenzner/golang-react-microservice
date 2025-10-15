@@ -11,13 +11,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Mount service code for hot-reload
-      - ./app/backend/service-a:/build/service-a:cached
-      # Mount shared library for hot-reload
-      - ./shared:/build/shared:cached
-      # Prevent overwriting Air's tmp directory
-      - /build/service-a/tmp
+      - ./app/backend/service-a:/build/app/backend/service-a:cached
+      - ./shared/go:/build/shared:cached
+      - /build/app/backend/service-a/tmp
     restart: unless-stopped
+    stop_grace_period: 30s  
+    stop_signal: SIGTERM
 
   service-b:
     build:
@@ -28,10 +27,9 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      # Mount service code for hot-reload
-      - ./app/backend/service-b:/build/service-b:cached
-      # Mount shared library for hot-reload
-      - ./shared:/build/shared:cached
-      # Prevent overwriting Air's tmp directory
-      - /build/service-b/tmp
+      - ./app/backend/service-b:/build/app/backend/service-b:cached
+      - ./shared/go:/build/shared:cached
+      - /build/app/backend/service-b/tmp
     restart: unless-stopped
+    stop_grace_period: 30s  
+    stop_signal: SIGTERM

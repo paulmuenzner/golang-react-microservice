@@ -1,8 +1,8 @@
 # Microservice Blueprint: Go Monorepo with Hot-Reload
 
-This project serves as a comprehensive and robust blueprint for developing modern microservices using Go, managed within a monorepo structure. It is designed for fast, containerized development using **Podman/Docker** and features **Hot-Reload** capabilities via `air`, ensuring a highly efficient development loop right from the start.
+This project serves as a comprehensive and robust blueprint for developing modern microservices using Go, managed within a monorepo structure. It is designed for fast, containerized development using **Podman/Docker** and features **Hot-Reload** capabilities via `air`, ensuring a highly efficient development loop right from the start. It is designed for scalability, maintainability, and clean separation of concerns.
 
-# Key Features
+## Features
 
 - Monorepo Structure: Centralized repository for multiple independent services (service-a, service-b) and shared libraries (shared/go).
 
@@ -16,7 +16,38 @@ This project serves as a comprehensive and robust blueprint for developing moder
 
 - Robust Development Setup: Non-destructive Dockerfile commands ensure that local go.mod files are protected from container-level modifications.
 
-# Project structure
+
+## Quick Start 
+
+```bash
+make init  # Initialize dependencies
+make dev   # Start development environment
+```
+
+## Testing 🧪
+
+```bash
+make test
+```
+
+
+## Deployment 🚢
+
+```bash
+make prod
+make prod-up
+```
+
+## Contributing 🤝
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## License 📄
+
+MIT License - see [LICENSE](LICENSE)
+
+
+## Architecture
 
 ```
 /project/
@@ -28,12 +59,22 @@ This project serves as a comprehensive and robust blueprint for developing moder
 ├── README.md                # This file
 │
 ├── shared/
-│ └── go/
-│   ├── go.mod               # Shared module definition
-│   └── shared.go            # Example shared logic (e.g., logging, helpers)
+│ ├── go/
+│ │ ├── go.mod               # Shared module definition
+│ │ └── shared.go            # Example shared logic (e.g., logging, helpers)
+│ │
+│ ├── react/
+│ │
+│ ├── data/
 │
 └── app/
   └── backend/
+    ├── gateway/
+    │ ├── go.mod             # Service module file
+    │ ├── main.go            # Service entry point
+    │ ├── Dockerfile         # Service-specific build instructions
+    │ └── .air.toml          # Air Hot-Reload configuration
+    │
     ├── service-a/
     │ ├── go.mod             # Service module file
     │ ├── main.go            # Service entry point

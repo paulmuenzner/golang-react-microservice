@@ -1,10 +1,13 @@
-// service-a/main.go
-
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	shared "github.com/company/shared/go"
 )
@@ -13,17 +16,48 @@ func main() {
 	logger := shared.NewLogger("SERVICE-A")
 	logger.Println("Starting on 0.0.0.0:8080")
 
+	// Define routes
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		msg := shared.Greet("Service A")
 		logger.Printf("Request from %s", r.RemoteAddr)
 		fmt.Fprintf(w, "%s\n", msg)
 	})
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "OK!!")
 	})
 
-	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
-		logger.Fatal(err)
+	// Create server with explicit configuration
+	srv := &http.Server{
+		Addr:    "0.0.0.0:8080",
+		Handler: nil, // Uses default ServeMux
 	}
+
+	// Start server in a goroutine
+	go func() {
+		logger.Println("Server is ready to handle requests")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatalf("Could not listen on 0.0.0.0:8080: %v\n", err)
+		}
+	}()
+
+	// Setup signal catching
+	quit := make(chan os.Signal, 1)
+	// Catch SIGINT (Ctrl+C) and SIGTERM (docker stop)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block until signal is received
+	sig := <-quit
+	logger.Printf("Received signal: %v. Shutting down gracefully...", sig)
+
+	// Create a deadline for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	logger.Println("Server stopped gracefully")
 }

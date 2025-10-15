@@ -1,5 +1,3 @@
-// /project/shared/shared.go
-
 package shared
 
 import (

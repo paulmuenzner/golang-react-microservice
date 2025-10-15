@@ -3,7 +3,7 @@ tmp_dir = "tmp"
 
 [build]
   bin = "tmp/runner"
-  cmd = "go build -modfile /tmp/go.mod -o ./tmp/runner ."
+  cmd = "go build -o ./tmp/runner ."
   delay = 1000
   exclude_dir = ["tmp", "vendor"]
   exclude_regex = ["_test.go"]
@@ -11,9 +11,11 @@ tmp_dir = "tmp"
   poll = true              
   poll_interval = 500      
   stop_on_error = true
+  send_interrupt = true   
+  kill_delay = 5 
 
 [watch]
-  include_dir = ["./", "../shared/go"]
+  include_dir = ["./", "../../../shared/go"]
 
 [color]
   main = "magenta"

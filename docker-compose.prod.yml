@@ -12,7 +12,7 @@ services:
     container_name: service-a-prod
     ports:
       - "8080:8080"
-    restart: always
+    restart: unless-stopped
     # No volumes - code is baked into image
     # No hot-reload - this is production
 
@@ -25,6 +25,6 @@ services:
     container_name: service-b-prod
     ports:
       - "8081:8081"
-    restart: always
+    restart: unless-stopped
     # No volumes - code is baked into image
     # No hot-reload - this is production
