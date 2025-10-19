@@ -1,0 +1,327 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/google/uuid"
+	"yourproject/shared/go/logger"
+)
+
+// ==========================================
+// EXAMPLE 1: Basic Initialization
+// ==========================================
+func main() {
+	// Initialize logger at application startup
+	logger.Init("gateway", os.Getenv("ENVIRONMENT"))
+
+	logger.Info("Service starting")
+	logger.Debug("This only shows in development")
+
+	// Start server...
+	startServer()
+}
+
+// ==========================================
+// EXAMPLE 2: Simple Logging
+// ==========================================
+func simpleLogging() {
+	// Basic logs
+	logger.Info("User logged in")
+	logger.Warn("API rate limit approaching")
+
+	// With error
+	err := errors.New("database connection failed")
+	logger.Error("Failed to connect", err)
+
+	// Fatal (stops application!)
+	// logger.Fatal("Critical error", err)
+}
+
+// ==========================================
+// EXAMPLE 3: Structured Logging with Fields
+// ==========================================
+func structuredLogging() {
+	// Add context to logs
+	logger.InfoWithFields("User registered", map[string]interface{}{
+		"user_id": 12345,
+		"email":   "user@example.com",
+		"plan":    "premium",
+	})
+
+	// Error with context
+	err := errors.New("payment failed")
+	logger.ErrorWithFields("Payment processing failed", err, map[string]interface{}{
+		"user_id":    12345,
+		"amount":     99.99,
+		"currency":   "USD",
+		"payment_id": "pay_123456",
+	})
+
+	// Debug with details (only in development)
+	logger.DebugWithFields("Processing request", map[string]interface{}{
+		"step":       "validation",
+		"input_size": 1024,
+		"timeout":    30,
+	})
+}
+
+// ==========================================
+// EXAMPLE 4: HTTP Request Logging
+// ==========================================
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Generate request ID for tracing
+		requestID := uuid.New().String()
+		ctx := context.WithValue(r.Context(), "request_id", requestID)
+		r = r.WithContext(ctx)
+
+		// Create logger with request ID
+		reqLogger := logger.WithRequestID(requestID)
+
+		// Log incoming request
+		reqLogger.InfoWithFields("Incoming request", map[string]interface{}{
+			"method": r.Method,
+			"path":   r.URL.Path,
+			"ip":     r.RemoteAddr,
+		})
+
+		// Wrap response writer to capture status code
+		wrapped := &responseWriter{ResponseWriter: w, statusCode: 200}
+
+		// Process request
+		next.ServeHTTP(wrapped, r)
+
+		// Log completed request
+		duration := time.Since(start)
+		reqLogger.HTTP(
+			r.Method,
+			r.URL.Path,
+			wrapped.statusCode,
+			duration,
+			r.RemoteAddr,
+		)
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+// ==========================================
+// EXAMPLE 5: Context-Aware Logging
+// ==========================================
+func processOrder(ctx context.Context, orderID string) error {
+	// Create logger from context (includes request_id, user_id)
+	reqLogger := logger.AppLogger.WithContext(ctx)
+
+	reqLogger.InfoWithFields("Processing order", map[string]interface{}{
+		"order_id": orderID,
+	})
+
+	// Simulate processing steps
+	reqLogger.Debug("Validating order")
+
+	// Business logic...
+	if err := validateOrder(orderID); err != nil {
+		reqLogger.ErrorWithFields("Order validation failed", err, map[string]interface{}{
+			"order_id": orderID,
+			"reason":   "invalid_items",
+		})
+		return err
+	}
+
+	reqLogger.InfoWithFields("Order processed successfully", map[string]interface{}{
+		"order_id": orderID,
+		"status":   "completed",
+	})
+
+	return nil
+}
+
+// ==========================================
+// EXAMPLE 6: Persistent Logger with Fields
+// ==========================================
+func userService() {
+	// Create logger with persistent fields
+	serviceLogger := logger.AppLogger.WithFields(map[string]interface{}{
+		"component": "user_service",
+		"version":   "1.0.0",
+	})
+
+	// All logs from this logger include component and version
+	serviceLogger.Info("Service initialized")
+
+	// Add more context
+	userLogger := serviceLogger.WithField("user_id", "user_123")
+
+	// All logs include: service, component, version, user_id
+	userLogger.Info("User profile loaded")
+	userLogger.Info("Preferences updated")
+}
+
+// ==========================================
+// EXAMPLE 7: HTTP Handler Example
+// ==========================================
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	// Get request-scoped logger
+	requestID := r.Context().Value("request_id").(string)
+	reqLogger := logger.WithRequestID(requestID)
+
+	reqLogger.Info("Login attempt")
+
+	// Parse credentials (simplified)
+	username := r.FormValue("username")
+
+	// Business logic
+	user, err := authenticateUser(username)
+	if err != nil {
+		reqLogger.ErrorWithFields("Authentication failed", err, map[string]interface{}{
+			"username": username,
+			"reason":   "invalid_credentials",
+		})
+		http.Error(w, "Authentication failed", http.StatusUnauthorized)
+		return
+	}
+
+	// Success - add user context to logger
+	userLogger := reqLogger.WithField("user_id", user.ID)
+	userLogger.InfoWithFields("Login successful", map[string]interface{}{
+		"username": user.Username,
+		"role":     user.Role,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Login successful"))
+}
+
+// ==========================================
+// EXAMPLE 8: Database Query Logging
+// ==========================================
+func getUserByID(id int) (*User, error) {
+	start := time.Now()
+
+	logger.DebugWithFields("Executing database query", map[string]interface{}{
+		"query":   "SELECT * FROM users WHERE id = ?",
+		"user_id": id,
+	})
+
+	// Simulate database query
+	user := &User{ID: id, Username: "john_doe"}
+	duration := time.Since(start)
+
+	logger.InfoWithFields("Database query completed", map[string]interface{}{
+		"query":       "users.get_by_id",
+		"user_id":     id,
+		"duration_ms": duration.Milliseconds(),
+	})
+
+	return user, nil
+}
+
+// ==========================================
+// EXAMPLE 9: Background Job Logging
+// ==========================================
+func emailWorker() {
+	jobLogger := logger.AppLogger.WithFields(map[string]interface{}{
+		"component": "email_worker",
+		"worker_id": 1,
+	})
+
+	jobLogger.Info("Worker started")
+
+	for job := range getJobs() {
+		// Add job-specific context
+		jobCtxLogger := jobLogger.WithFields(map[string]interface{}{
+			"job_id":   job.ID,
+			"email_to": job.Email,
+		})
+
+		jobCtxLogger.Info("Processing email job")
+
+		if err := sendEmail(job); err != nil {
+			jobCtxLogger.ErrorWithFields("Failed to send email", err, map[string]interface{}{
+				"retry_count": job.RetryCount,
+			})
+			continue
+		}
+
+		jobCtxLogger.Info("Email sent successfully")
+	}
+}
+
+// ==========================================
+// EXAMPLE 10: Performance Monitoring
+// ==========================================
+func slowOperation() {
+	logger.Info("Starting slow operation")
+	start := time.Now()
+
+	// Do work...
+	time.Sleep(2 * time.Second)
+
+	duration := time.Since(start)
+
+	// Log with timing
+	logger.InfoWithFields("Operation completed", map[string]interface{}{
+		"operation":   "data_processing",
+		"duration_ms": duration.Milliseconds(),
+		"records":     1000,
+	})
+
+	// Warn if too slow
+	if duration > 3*time.Second {
+		logger.WarnWithFields("Slow operation detected", map[string]interface{}{
+			"operation":   "data_processing",
+			"duration_ms": duration.Milliseconds(),
+			"threshold":   3000,
+		})
+	}
+}
+
+// ==========================================
+// Helper types and functions
+// ==========================================
+
+type User struct {
+	ID       int
+	Username string
+	Role     string
+}
+
+func validateOrder(orderID string) error {
+	return nil
+}
+
+func authenticateUser(username string) (*User, error) {
+	return &User{ID: 123, Username: username, Role: "user"}, nil
+}
+
+type Job struct {
+	ID         int
+	Email      string
+	RetryCount int
+}
+
+func getJobs() chan Job {
+	return make(chan Job)
+}
+
+func sendEmail(job Job) error {
+	return nil
+}
+
+func startServer() {
+	// Server logic
+}

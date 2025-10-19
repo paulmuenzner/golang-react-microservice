@@ -59,6 +59,13 @@ dev-g: ## Start only gateway in development mode
 	@echo "🐳 Starting gateway only (Go ${GO_VERSION})..."
 	GO_VERSION=${GO_VERSION} podman-compose up gateway
 
+dev-quiet: ## Start services without logging stack logs
+	@echo "🐳 Starting logging stack in background..."
+	podman-compose up -d loki promtail grafana
+	@sleep 5
+	@echo "🐳 Starting services with logs..."
+	podman-compose up gateway service-a service-b
+
 lint: ## Run golangci-lint on all Go code
 	@echo "🔍 Running linters..."
 	@cd shared/go && golangci-lint run
@@ -173,3 +180,13 @@ check: fmt lint test ## Run all checks (format, lint, test)
 
 ci: init check ## Run CI pipeline locally
 	@echo "✅ CI pipeline complete!"
+
+logs-grafana: ## Open Grafana in browser
+	@echo "🔍 Opening Grafana..."
+	@echo "URL: http://localhost:3000"
+	@echo "Login: admin / admin"
+	@xdg-open http://localhost:3000 2>/dev/null || open http://localhost:3000 2>/dev/null || echo "Open manually: http://localhost:3000"
+
+logs-loki: ## Show Loki logs
+	@echo "📋 Showing Loki logs..."
+	podman-compose logs -f loki

@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	shared "github.com/company/shared/go"
+	shared "github.com/app/shared/go"
 )
 
 func main() {
-	logger := shared.NewLogger("SERVICE-A")
+	logger.Init("service-a", os.Getenv("ENVIRONMENT"))
 	logger.Println("Starting on 0.0.0.0:8080")
 
 	// Define routes

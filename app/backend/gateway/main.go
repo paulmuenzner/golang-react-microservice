@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"time"
-
-	shared "github.com/company/shared/go"
 )
 
 func newProxy(target string, prefix string) http.Handler {
@@ -37,7 +36,8 @@ func newProxy(target string, prefix string) http.Handler {
 }
 
 func main() {
-	logger := shared.NewLogger("GATEWAY")
+	logger.Init("gateway", os.Getenv("ENVIRONMENT"))
+	logger.Info("Gateway starting on localhost:8080")
 
 	// Proxy /service-a -> http://service-a:8080
 	http.Handle("/service-a/", newProxy("http://service-a:8080", "/service-a"))
@@ -50,8 +50,8 @@ func main() {
 		w.Write([]byte("gateway OK"))
 	})
 
-	logger.Println("Gateway listening on :8080")
+	logger.Info("Gateway listening on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		logger.Fatalf("Gateway failed: %v", err)
+		logger.Fatal("Failed to start server", err)
 	}
 }

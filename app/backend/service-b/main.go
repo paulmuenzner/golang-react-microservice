@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
-	shared "github.com/company/shared/go"
+	shared "github.com/app/shared/go"
 )
 
 func main() {
-	logger := shared.NewLogger("SERVICE-B")
+	logger.Init("SERVICE-B", os.Getenv("ENVIRONMENT"))
 	logger.Println("Starting on 0.0.0.0:8080")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

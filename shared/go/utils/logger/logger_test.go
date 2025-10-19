@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/company/shared/go/logger"
+	"github.com/app/shared/go/utils/logger"
 )
 
 func TestLoggingLevels(t *testing.T) {

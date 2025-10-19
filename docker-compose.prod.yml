@@ -7,6 +7,8 @@ services:
       dockerfile: app/backend/gateway/Dockerfile
       target: builder # Production stage
     image: gateway:latest
+    environment:
+      - ENVIRONMENT=production
     ports:
       - "8080:8080" # Gateway exposed to host
     restart: unless-stopped
@@ -25,6 +27,8 @@ services:
       dockerfile: app/backend/service-a/Dockerfile
       target: builder # Production stage
     image: service-a:latest
+    environment:
+      - ENVIRONMENT=production
     expose:
       - "8080" # only internal
     restart: unless-stopped
@@ -42,6 +46,8 @@ services:
       dockerfile: app/backend/service-b/Dockerfile
       target: builder # Production stage
     image: service-b:latest
+    environment:
+      - ENVIRONMENT=production
     expose:
       - "8080"
     restart: unless-stopped
@@ -53,8 +59,76 @@ services:
       timeout: 2s
       retries: 5
 
+
+  # ==========================================
+  # LOGGING STACK (PRODUCTION)
+  # ==========================================
+
+  loki:
+    image: docker.io/grafana/loki:2.9.0
+    container_name: loki-prod
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki.prod.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    networks:
+      - backend
+
+  promtail:
+    image: docker.io/grafana/promtail:2.9.0
+    container_name: promtail-prod
+    volumes:
+      - /run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
+      - ./config/promtail.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    depends_on:
+      - loki
+    networks:
+      - backend
+
+  grafana:
+    image: docker.io/grafana/grafana:10.0.0
+    container_name: grafana-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    depends_on:
+      - loki
+    networks:
+      - backend
+
 networks:
   frontend:
     driver: bridge
   backend:
     driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:

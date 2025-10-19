@@ -1,7 +1,9 @@
-module github.com/company/gateway
+module github.com/app/gateway
 
-go 1.23
+go 1.23.0
 
-require github.com/company/shared/go v0.0.0
+toolchain go1.24.1
 
-replace github.com/company/shared/go => ../../../shared/go
+require github.com/app/shared/go v0.0.0
+
+replace github.com/app/shared/go => ../../../shared/go
