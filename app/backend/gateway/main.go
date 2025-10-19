@@ -3,13 +3,18 @@ package main
 // For production, you should add features such as timeouts, circuit breakers (e.g. goresilience), retries, logging, authentication, and metrics.
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	logger "github.com/app/shared/go/utils/logger"
 )
+
+const listenAddr = ":8080"
 
 func newProxy(target string, prefix string) http.Handler {
 	u, _ := url.Parse(target)
@@ -50,8 +55,15 @@ func main() {
 		w.Write([]byte("gateway OK"))
 	})
 
-	logger.Info("Gateway listening on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		logger.Fatal("Failed to start server", err)
+	logger.Info(fmt.Sprintf("Gateway listening on %s", listenAddr))
+
+	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+		logger.FatalWithFields(
+			"Failed to start HTTP server",
+			err,
+			map[string]interface{}{
+				"address": listenAddr,
+			},
+		)
 	}
 }

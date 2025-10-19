@@ -6,15 +6,20 @@ import (
 	"os"
 
 	shared "github.com/app/shared/go"
+	logger "github.com/app/shared/go/utils/logger"
 )
 
 func main() {
 	logger.Init("SERVICE-B", os.Getenv("ENVIRONMENT"))
-	logger.Println("Starting on 0.0.0.0:8080")
+	logger.Info("Starting on 0.0.0.0:8080")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		msg := shared.Greet("Service B")
-		logger.Printf("Request from %s", r.RemoteAddr)
+		logger.InfoWithFields(
+			"Incoming request received",
+			map[string]interface{}{"remote_addr": r.RemoteAddr},
+		)
+
 		fmt.Fprintf(w, "%s\n", msg)
 	})
 
@@ -24,6 +29,6 @@ func main() {
 	})
 
 	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
-		logger.Fatal(err)
+		logger.Error("Starting on 0.0.0.0:8080")
 	}
 }

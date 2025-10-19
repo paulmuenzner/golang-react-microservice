@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"io"
 	"os"
 	"time"
 
@@ -20,7 +21,7 @@ var AppLogger *Logger
 // serviceName: Name of the microservice (e.g. "gateway", "service-a")
 // environment: "development" or "production"
 func Init(serviceName, environment string) {
-	var output = os.Stdout
+	var output io.Writer = os.Stdout
 
 	// Development: Pretty console output with colors
 	if environment == "development" {
@@ -140,6 +141,15 @@ func (l *Logger) Fatal(msg string, err error) {
 	l.zlog.Fatal().Err(err).Msg(msg)
 }
 
+// FatalWithFields logs fatal error with additional context and exits application
+func (l *Logger) FatalWithFields(msg string, err error, fields map[string]interface{}) {
+	event := l.zlog.Fatal().Err(err)
+	for k, v := range fields {
+		event = event.Interface(k, v)
+	}
+	event.Msg(msg)
+}
+
 // HTTP logs HTTP requests with standard fields
 func (l *Logger) HTTP(method, path string, statusCode int, duration time.Duration, clientIP string) {
 	l.zlog.Info().
@@ -170,11 +180,11 @@ func (l *Logger) HTTPWithFields(method, path string, statusCode int, duration ti
 // (Can be used without creating Logger instance)
 // ==========================================
 
-func Debug(msg string) {
-	if AppLogger != nil {
-		AppLogger.Debug(msg)
-	}
-}
+// func Debug(msg string) {
+// 	if AppLogger != nil {
+// 		AppLogger.Debug(msg)
+// 	}
+// }
 
 func DebugWithFields(msg string, fields map[string]interface{}) {
 	if AppLogger != nil {
@@ -182,11 +192,11 @@ func DebugWithFields(msg string, fields map[string]interface{}) {
 	}
 }
 
-func Info(msg string) {
-	if AppLogger != nil {
-		AppLogger.Info(msg)
-	}
-}
+// func Info(msg string) {
+// 	if AppLogger != nil {
+// 		AppLogger.Info(msg)
+// 	}
+// }
 
 func InfoWithFields(msg string, fields map[string]interface{}) {
 	if AppLogger != nil {
@@ -194,11 +204,11 @@ func InfoWithFields(msg string, fields map[string]interface{}) {
 	}
 }
 
-func Warn(msg string) {
-	if AppLogger != nil {
-		AppLogger.Warn(msg)
-	}
-}
+// func Warn(msg string) {
+// 	if AppLogger != nil {
+// 		AppLogger.Warn(msg)
+// 	}
+// }
 
 func WarnWithFields(msg string, fields map[string]interface{}) {
 	if AppLogger != nil {
@@ -206,11 +216,11 @@ func WarnWithFields(msg string, fields map[string]interface{}) {
 	}
 }
 
-func Error(msg string, err error) {
-	if AppLogger != nil {
-		AppLogger.Error(msg, err)
-	}
-}
+// func Error(msg string, err error) {
+// 	if AppLogger != nil {
+// 		AppLogger.Error(msg, err)
+// 	}
+// }
 
 func ErrorWithFields(msg string, err error, fields map[string]interface{}) {
 	if AppLogger != nil {
@@ -218,9 +228,16 @@ func ErrorWithFields(msg string, err error, fields map[string]interface{}) {
 	}
 }
 
-func Fatal(msg string, err error) {
+// func Fatal(msg string, err error) {
+// 	if AppLogger != nil {
+// 		AppLogger.Fatal(msg, err)
+// 	}
+// }
+
+func FatalWithFields(msg string, err error, fields map[string]interface{}) {
 	if AppLogger != nil {
-		AppLogger.Fatal(msg, err)
+		// Wir rufen die neu definierte Methode auf
+		AppLogger.FatalWithFields(msg, err, fields)
 	}
 }
 

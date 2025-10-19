@@ -10,16 +10,19 @@ import (
 	"time"
 
 	shared "github.com/app/shared/go"
+	logger "github.com/app/shared/go/utils/logger"
 )
 
 func main() {
-	logger.Init("service-a", os.Getenv("ENVIRONMENT"))
-	logger.Println("Starting on 0.0.0.0:8080")
+	logger.Init("SERVICE-A", os.Getenv("ENVIRONMENT"))
 
 	// Define routes
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		msg := shared.Greet("Service A")
-		logger.Printf("Request from %s", r.RemoteAddr)
+		logger.InfoWithFields(
+			"Incoming request received",
+			map[string]interface{}{"remote_addr": r.RemoteAddr},
+		)
 		fmt.Fprintf(w, "%s\n", msg)
 	})
 
@@ -36,9 +39,9 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		logger.Println("Server is ready to handle requests")
+		logger.Info("Server is ready to handle requests")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Could not listen on 0.0.0.0:8080: %v\n", err)
+			logger.Fatal(fmt.Sprintf("Could not listen on 0.0.0.0:8080: %v\n", err))
 		}
 	}()
 
@@ -49,7 +52,7 @@ func main() {
 
 	// Block until signal is received
 	sig := <-quit
-	logger.Printf("Received signal: %v. Shutting down gracefully...", sig)
+	logger.Info(fmt.Sprintf("Received signal: %v. Shutting down gracefully...", sig))
 
 	// Create a deadline for shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -57,8 +60,8 @@ func main() {
 
 	// Attempt graceful shutdown
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatalf("Server forced to shutdown: %v", err)
+		logger.Fatal(fmt.Sprintf("Server forced to shutdown: %s", err))
 	}
 
-	logger.Println("Server stopped gracefully")
+	logger.Info("Server stopped gracefully")
 }
