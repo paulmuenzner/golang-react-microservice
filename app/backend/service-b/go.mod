@@ -4,7 +4,10 @@ go 1.23.0
 
 toolchain go1.24.1
 
-require github.com/app/shared/go v0.0.0
+require (
+	github.com/app/shared/go v0.0.0
+	github.com/google/uuid v1.6.0
+)
 
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect

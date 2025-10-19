@@ -15,6 +15,7 @@ services:
     volumes:
       - ./app/backend/gateway:/build/app/backend/gateway:cached
       - ./shared/go:/build/shared/go:cached
+      - ./shared/data:/build/shared/data:cached 
       - /build/app/backend/gateway/tmp
     environment:
       - ENVIRONMENT=development
@@ -49,6 +50,7 @@ services:
     volumes:
       - ./app/backend/service-a:/build/app/backend/service-a:cached
       - ./shared/go:/build/shared/go:cached
+      - ./shared/data:/build/shared/data:cached 
       - /build/app/backend/service-a/tmp
     environment:
       - ENVIRONMENT=development
@@ -76,6 +78,7 @@ services:
     volumes:
       - ./app/backend/service-b:/build/app/backend/service-b:cached
       - ./shared/go:/build/shared/go:cached
+      - ./shared/data:/build/shared/data:cached 
       - /build/app/backend/service-b/tmp
     environment:
       - ENVIRONMENT=development

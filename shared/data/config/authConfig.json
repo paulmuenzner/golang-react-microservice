@@ -1,0 +1,11 @@
+{
+  "minLengthPassword": 12,
+  "maxLengthPassword": 50,
+  "maxLengthEmailAddress": 60,
+  "cookie": {
+    "authCookieLifetimeSeconds": 3600,
+    "authCookieJWTLifetimeSeconds": 3600,
+    "authCookieName": "authCookie"
+  },
+  "timeValidVerifyTokenMinutes": 15
+}

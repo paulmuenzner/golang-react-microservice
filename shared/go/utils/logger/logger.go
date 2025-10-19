@@ -24,12 +24,12 @@ func Init(serviceName, environment string) {
 	var output io.Writer = os.Stdout
 
 	// Development: Pretty console output with colors
-	if environment == "development" {
-		output = zerolog.ConsoleWriter{
-			Out:        os.Stdout,
-			TimeFormat: "15:04:05",
-		}
-	}
+	// if environment == "development" {
+	// 	output = zerolog.ConsoleWriter{
+	// 		Out:        os.Stdout,
+	// 		TimeFormat: "15:04:05",
+	// 	}
+	// }
 
 	// Set log level based on environment
 	level := zerolog.InfoLevel

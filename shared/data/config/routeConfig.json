@@ -1,0 +1,14 @@
+{
+  "backend": {
+    "ListenHost": "0.0.0.0",
+    "ListenPort": "8080",
+    "ServiceA": {
+      "Prefix": "/service-a/",
+      "TargetURL": "http://service-a:8080"
+    },
+    "ServiceB": {
+      "Prefix": "/service-b/",
+      "TargetURL": "http://service-b:8080"
+    }
+  }
+}
