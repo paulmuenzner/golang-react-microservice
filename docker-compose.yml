@@ -2,38 +2,90 @@
 version: "3.9"
 
 services:
-  service-a:
+  gateway:
+    container_name: gateway-dev
     build:
-      context: . # Root context (important!)
-      dockerfile: app/backend/service-a/Dockerfile
-      target: dev 
+      context: . 
+      dockerfile: app/backend/gateway/Dockerfile
+      target: dev
       args:
         GO_VERSION: ${GO_VERSION}
-    container_name: service-a-dev
     ports:
-      - "8080:8080"
+      - "8080:8080"   # Only gateway is exposed to host
+    volumes:
+      - ./app/backend/gateway:/build/app/backend/gateway:cached
+      - ./shared/go:/build/shared/go:cached
+      - /build/app/backend/gateway/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      service-a:
+        condition: service_healthy
+      service-b:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    networks:
+      - frontend
+      - backend
+
+  service-a:
+    container_name: service-a-dev
+    build:
+      context: .
+      dockerfile: app/backend/service-a/Dockerfile
+      target: dev
+      args:
+        GO_VERSION: ${GO_VERSION}
+    expose:
+      - "8080"
     volumes:
       - ./app/backend/service-a:/build/app/backend/service-a:cached
-      - ./shared/go:/build/shared:cached
+      - ./shared/go:/build/shared/go:cached
       - /build/app/backend/service-a/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
     restart: unless-stopped
-    stop_grace_period: 30s  
+    stop_grace_period: 30s
     stop_signal: SIGTERM
+    networks:
+      - backend
 
   service-b:
+    container_name: service-b-dev
     build:
-      context: . # Root context (important!)
+      context: .
       dockerfile: app/backend/service-b/Dockerfile
       target: dev
       args:
         GO_VERSION: ${GO_VERSION}
-    container_name: service-b-dev
-    ports:
-      - "8081:8081"
+    expose:
+      - "8080"
     volumes:
       - ./app/backend/service-b:/build/app/backend/service-b:cached
-      - ./shared/go:/build/shared:cached
+      - ./shared/go:/build/shared/go:cached
       - /build/app/backend/service-b/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
     restart: unless-stopped
-    stop_grace_period: 30s  
+    stop_grace_period: 30s
     stop_signal: SIGTERM
+    networks:
+      - backend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge

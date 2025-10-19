@@ -1,30 +1,60 @@
-#  docker-compose.prod.yml
-
 version: "3.9"
 
 services:
+  gateway:
+    build:
+      context: .
+      dockerfile: app/backend/gateway/Dockerfile
+      target: builder # Production stage
+    image: gateway:latest
+    ports:
+      - "8080:8080" # Gateway exposed to host
+    restart: unless-stopped
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      service-a:
+        condition: service_healthy
+      service-b:
+        condition: service_healthy
+
   service-a:
     build:
       context: .
       dockerfile: app/backend/service-a/Dockerfile
-      target: builder # Use production stage (not dev!)
+      target: builder # Production stage
     image: service-a:latest
-    container_name: service-a-prod
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080" # only internal
     restart: unless-stopped
-    # No volumes - code is baked into image
-    # No hot-reload - this is production
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
 
   service-b:
     build:
       context: .
       dockerfile: app/backend/service-b/Dockerfile
-      target: builder # Use production stage (not dev!)
+      target: builder # Production stage
     image: service-b:latest
-    container_name: service-b-prod
-    ports:
-      - "8081:8081"
+    expose:
+      - "8080"
     restart: unless-stopped
-    # No volumes - code is baked into image
-    # No hot-reload - this is production
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge

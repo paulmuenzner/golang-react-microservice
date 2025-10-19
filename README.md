@@ -16,8 +16,7 @@ This project serves as a comprehensive and robust blueprint for developing moder
 
 - Robust Development Setup: Non-destructive Dockerfile commands ensure that local go.mod files are protected from container-level modifications.
 
-
-## Quick Start 
+## Quick Start
 
 ```bash
 make init  # Initialize dependencies
@@ -29,7 +28,6 @@ make dev   # Start development environment
 ```bash
 make test
 ```
-
 
 ## Deployment 🚢
 
@@ -46,7 +44,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 MIT License - see [LICENSE](LICENSE)
 
-
 ## Architecture
 
 ```
@@ -61,7 +58,13 @@ MIT License - see [LICENSE](LICENSE)
 ├── shared/
 │ ├── go/
 │ │ ├── go.mod               # Shared module definition
-│ │ └── shared.go            # Example shared logic (e.g., logging, helpers)
+│ │ ├── shared.go            # Example shared logic (e.g., logging, helpers)
+│ │ ├── logger/              # Service module file
+│ │ │   └── logger.go
+│ │
+│ │
+│ │
+│ │
 │ │
 │ ├── react/
 │ │
@@ -70,16 +73,16 @@ MIT License - see [LICENSE](LICENSE)
 └── app/
   └── backend/
     ├── gateway/
-    │ ├── go.mod             # Service module file
-    │ ├── main.go            # Service entry point
-    │ ├── Dockerfile         # Service-specific build instructions
-    │ └── .air.toml          # Air Hot-Reload configuration
+    │   ├── go.mod             # Service module file
+    │   ├── main.go            # Service entry point
+    │   ├── Dockerfile         # Service-specific build instructions
+    │   └── .air.toml          # Air Hot-Reload configuration
     │
     ├── service-a/
-    │ ├── go.mod             # Service module file
-    │ ├── main.go            # Service entry point
-    │ ├── Dockerfile         # Service-specific build instructions
-    │ └── .air.toml          # Air Hot-Reload configuration
+    │   ├── go.mod             # Service module file
+    │   ├── main.go            # Service entry point
+    │   ├── Dockerfile         # Service-specific build instructions
+    │   └── .air.toml          # Air Hot-Reload configuration
     │
     └── service-b/
         ├── go.mod           # Service module file

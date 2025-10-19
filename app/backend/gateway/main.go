@@ -1,29 +1,57 @@
-// gateway/main.go
-
 package main
 
+// For production, you should add features such as timeouts, circuit breakers (e.g. goresilience), retries, logging, authentication, and metrics.
+
 import (
-	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strings"
+	"time"
 
 	shared "github.com/company/shared/go"
 )
 
+func newProxy(target string, prefix string) http.Handler {
+	u, _ := url.Parse(target)
+	proxy := httputil.NewSingleHostReverseProxy(u)
+
+	origDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		origDirector(req)
+		// Strip the prefix from the path (e.g. /service-a/foo -> /foo)
+		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
+		if req.URL.Path == "" {
+			req.URL.Path = "/"
+		}
+	}
+
+	// Optional: adjust timeouts via Transport
+	proxy.Transport = &http.Transport{
+		Proxy:               http.ProxyFromEnvironment,
+		IdleConnTimeout:     90 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+	}
+
+	return proxy
+}
+
 func main() {
 	logger := shared.NewLogger("GATEWAY")
-	logger.Println("Starting on 0.0.0.0:8082")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		msg := shared.Greet("Gateway")
-		logger.Printf("Request from %s", r.RemoteAddr)
-		fmt.Fprintf(w, "%s\n", msg)
+	// Proxy /service-a -> http://service-a:8080
+	http.Handle("/service-a/", newProxy("http://service-a:8080", "/service-a"))
+
+	// Proxy /service-b -> http://service-b:8080
+	http.Handle("/service-b/", newProxy("http://service-b:8080", "/service-b"))
+
+	// Health
+	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte("gateway OK"))
 	})
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Gateway OK!!")
-	})
-
-	if err := http.ListenAndServe("0.0.0.0:8082", nil); err != nil {
-		logger.Fatal(err)
+	logger.Println("Gateway listening on :8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		logger.Fatalf("Gateway failed: %v", err)
 	}
 }

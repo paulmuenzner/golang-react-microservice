@@ -23,8 +23,9 @@ func main() {
 		fmt.Fprintf(w, "%s\n", msg)
 	})
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprint(w, "OK!!")
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "OK")
 	})
 
 	// Create server with explicit configuration

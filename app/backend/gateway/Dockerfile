@@ -8,6 +8,9 @@ ARG GO_VERSION
 # Development stage with Air hot-reload
 FROM docker.io/library/golang:${GO_VERSION}-alpine AS dev
 
+# Install dependencies für Health Checks
+RUN apk add --no-cache curl ca-certificates
+
 WORKDIR /build
 
 # Install Air for hot-reload

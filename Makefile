@@ -75,7 +75,7 @@ fmt: ## Format all Go code
 	@cd app/backend/gateway && go fmt ./...
 	@echo "✅ Formatting complete!"
 
-prodnew: ## Build production Docker images
+prod: ## Build production Docker images
 	@echo "🏗️  Building production images..."
 	podman-compose -f docker-compose.prod.yml build \
 		--build-arg GO_VERSION=${GO_VERSION}
@@ -114,31 +114,23 @@ clean: ## Remove containers, volumes, and temporary files
 	@echo "✅ Cleanup complete!"
 
 delete: ## Delete ALL containers, images, and system data (DESTRUCTIVE!)
-	@echo "⚠️  WARNING: This will delete ALL Podman data!"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "🧹 Deleting everything..."; \
-		podman stop -a 2>/dev/null || true; \
-		podman rm -a 2>/dev/null || true; \
+	@bash -c '\
+	echo "⚠️  WARNING: This will delete ALL Podman data!"; \
+	read -p "Are you sure? [y/N] " REPLY; \
+	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
+		echo "🧹 Deleting all images..."; \
+		echo "Stopping all containers..."; \
+		podman stop -a; \
+		echo "Deleting all stopped containers..."; \
+		podman rm -a; \
+		echo "Deleting all images..."; \
 		podman image prune -a --force; \
+		echo "System clean up (networks, volumes, build cache)..."; \
 		podman system prune -a --force; \
-		echo "✅ All Podman data deleted!"; \
+		echo "✅ Deleted!"; \
 	else \
 		echo "❌ Deletion cancelled."; \
-	fi
-
-deleteold:
-	@echo "🧹 Delete all images..."
-	@echo " Stop all containers..."
-	podman stop -a
-	@echo "Delete all stopped containers..."
-	podman rm -a
-	@echo "Delete all images..."
-	podman image prune -a --force
-	@echo "System clean up (networks, volumes, build cache)..."
-	podman system prune -a --force
-	@echo "✅ Deleted!"
+	fi'
 
 stat: ## Show Podman images and running containers
 	@echo "🔍 Podman Status"
