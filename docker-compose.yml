@@ -2,6 +2,36 @@
 version: "3.9"
 
 services:
+
+  # ==========================================
+  # DATABASE
+  # ==========================================
+  
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    container_name: postgres-dev
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"  
+    volumes:
+      - postgres-data:/var/lib/postgresql/data  
+      - ./shared/data/migrations:/docker-entrypoint-initdb.d:ro  
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
+
+  # ==========================================
+  # SERVICES
+  # ==========================================
+
   gateway:
     container_name: gateway-dev
     build:
@@ -19,6 +49,7 @@ services:
       - /build/app/backend/gateway/tmp
     environment:
       - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -54,11 +85,15 @@ services:
       - /build/app/backend/service-a/tmp
     environment:
       - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 2s
       retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -82,11 +117,15 @@ services:
       - /build/app/backend/service-b/tmp
     environment:
       - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 2s
       retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy  
     restart: unless-stopped
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -147,3 +186,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  postgres-data:
