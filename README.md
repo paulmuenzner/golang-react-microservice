@@ -219,14 +219,6 @@ The gateway includes intelligent IP detection that works across different deploy
 - **Direct Connection**: `RemoteAddr` (fallback)
 - **Security**: Filters private/internal IPs and validates against spoofing
 
-### Optional/Future Middlewares
-- **CSRF Protection**: Cross-Site Request Forgery prevention with token validation
-- **IP Filtering**: Whitelist/blacklist specific IP addresses or ranges
-- **API Key Authentication**: Validate `X-API-Key` headers for protected endpoints
-- **Circuit Breaker**: Prevent cascading failures by temporarily blocking failing services
-- **Metrics Middleware**: Export Prometheus metrics for monitoring
-- **Cloudflare Validation**: Verify requests truly originate from Cloudflare IPs
-
 ### Production Readiness
 - **Environment-Aware Configuration**: Different settings for development vs. production
   - Development: Permissive CORS (*), higher rate limits (1000 req/s), verbose logging
@@ -237,6 +229,13 @@ The gateway includes intelligent IP detection that works across different deploy
 - **Scalability**: Per-IP rate limiting allows horizontal scaling without shared state
 - **CDN Compatible**: Works seamlessly with Cloudflare, AWS CloudFront, Google Cloud CDN
 
+### Optional/Future Middlewares
+- **CSRF Protection**: Cross-Site Request Forgery prevention with token validation
+- **IP Filtering**: Whitelist/blacklist specific IP addresses or ranges
+- **API Key Authentication**: Validate `X-API-Key` headers for protected endpoints
+- **Circuit Breaker**: Prevent cascading failures by temporarily blocking failing services
+- **Metrics Middleware**: Export Prometheus metrics for monitoring
+- **Cloudflare Validation**: Verify requests truly originate from Cloudflare IPs
 
 ## Contributing 
 
