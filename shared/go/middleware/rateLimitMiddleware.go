@@ -1,3 +1,5 @@
+// shared/go/middleware/rateLimitMiddleware.go
+
 package middleware
 
 import (
@@ -53,22 +55,23 @@ func RateLimitMiddleware(requestsPerSecond float64, burst int) func(http.Handler
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := getClientIP(r)
+			ip := GetClientIPFromContext(r)
 			ipLimiter := limiter.getLimiter(ip)
 
 			if !ipLimiter.Allow() {
-				requestID := GetRequestID(r)
-
-				logger.WarnWithFields("Rate limit exceeded", map[string]interface{}{
-					"request_id":      requestID,
-					"method":          r.Method,
-					"path":            r.URL.Path,
-					"ip":              ip,
-					"user_agent":      r.UserAgent(),
-					"rate_limit":      requestsPerSecond,
-					"burst":           burst,
-					"x_forwarded_for": r.Header.Get("X-Forwarded-For"),
-				})
+				// ✅ Mit IP-Context für Security-Monitoring
+				logger.LogMiddlewareEventWithIPContext(
+					logger.EventRateLimitExceeded,
+					GetRequestID(r),
+					GetIPContextFromContext(r),
+					r.Method,
+					r.URL.Path,
+					r.UserAgent(),
+					map[string]interface{}{
+						"rate_limit": requestsPerSecond,
+						"burst":      burst,
+					},
+				)
 
 				w.Header().Set("Retry-After", "1")
 				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%.0f", requestsPerSecond))

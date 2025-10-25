@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"os"
+	"time"
 )
 
 // ==========================================
@@ -37,33 +38,41 @@ func BuildMiddlewareStack(handler http.Handler) http.Handler {
 	// 2. Request ID - MUST be early so all other middlewares can use it for logging
 	handler = RequestIDMiddleware(handler)
 
-	// 3. Timeout - Limit total request time (after RequestID so timeouts are logged with ID)
-	handler = LoggingMiddleware(handler)
+	// 3. IP Extraction (EINMAL früh extrahieren)
+	handler = IPExtractionMiddleware(handler)
 
-	// 4. Max Request Size - Reject large requests early
+	// 4. Cloudflare Validation (optional, nur wenn du Cloudflare nutzt)
+	if os.Getenv("USE_CLOUDFLARE") == "true" {
+		handler = CloudflareValidationMiddleware(handler)
+	}
+
+	// 5. Timeout - Limit total request time (after RequestID so timeouts are logged with ID)
+	handler = TimeoutMiddleware(handler, 10*time.Second)
+
+	// 6. Max Request Size - Reject large requests early
 	handler = MaxBytesMiddleware(10 * 1024 * 1024)(handler) // 10MB
 
-	// 5. CORS - Handle preflight requests early
+	// 7. CORS - Handle preflight requests early
 	handler = CORSMiddleware(corsWhitelist)(handler)
 
-	// 6. Security Headers - Always set security headers
+	// 8. Security Headers - Always set security headers
 	handler = SecurityHeadersMiddleware(handler)
 
-	// 7. Rate Limiting - Protect against abuse (per IP)
+	// 9. Rate Limiting - Protect against abuse (per IP)
 	if os.Getenv("ENVIRONMENT") == "production" {
 		handler = RateLimitMiddleware(100, 200)(handler) // 100 req/s per IP, burst 200
 	} else {
 		handler = RateLimitMiddleware(1000, 2000)(handler)
 	}
 
-	// 8. Compression - Compress responses
+	// 10. Compression - Compress responses
 	handler = CompressionMiddleware(handler)
 
-	// 9. Logging - Log requests/responses (uses RequestID from context)
+	// 11. Logging - Log requests/responses (uses RequestID from context)
 	//    Should be relatively late so it captures final response status/size
 	handler = LoggingMiddleware(handler)
 
-	// 10. Business Logic (Router/Proxy) comes after all middleware
+	// Business Logic (Router/Proxy) comes after all middleware
 
 	return handler
 }

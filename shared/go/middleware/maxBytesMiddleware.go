@@ -20,18 +20,20 @@ func MaxBytesMiddleware(maxBytes int64) func(http.Handler) http.Handler {
 
 			// Check if content length exceeds limit
 			if r.ContentLength > maxBytes {
-				requestID := GetRequestID(r)
-
-				logger.WarnWithFields("Request body too large", map[string]interface{}{
-					"request_id":     requestID,
-					"method":         r.Method,
-					"path":           r.URL.Path,
-					"ip":             getClientIP(r),
-					"user_agent":     r.UserAgent(),
-					"content_length": r.ContentLength,
-					"max_bytes":      maxBytes,
-					"exceeded_by":    r.ContentLength - maxBytes,
-				})
+				// ✅ Event-based logging mit Helper
+				logger.LogMiddlewareEvent(
+					logger.EventRequestTooLarge,
+					GetRequestID(r),
+					GetClientIPFromContext(r),
+					r.Method,
+					r.URL.Path,
+					r.UserAgent(),
+					map[string]interface{}{
+						"content_length": r.ContentLength,
+						"max_bytes":      maxBytes,
+						"exceeded_by":    r.ContentLength - maxBytes,
+					},
+				)
 
 				http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
 				return
