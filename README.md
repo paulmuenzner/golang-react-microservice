@@ -22,6 +22,44 @@ A production-ready monorepo template for building microservices with Go, featuri
 - **Structured JSON Logs**: All services output structured logs for easy parsing and analysis
 - **Log Retention**: Configurable retention periods (7 days dev, 90 days prod)
 
+### API Gateway Middleware Stack
+1. **Recovery** - Panic handling with stack traces
+2. **Request ID** - UUID generation for tracing
+3. **Timeout** - 30s request limit (504 Gateway Timeout)
+4. **Size Limit** - 10MB max payload (413 Entity Too Large)
+5. **CORS** - Whitelist-based cross-origin control
+6. **Security Headers** - OWASP headers (HSTS, CSP, XSS, clickjacking)
+7. **Rate Limiting** - Per-IP: 100 req/s, Cloudflare-compatible
+8. **Compression** - Automatic gzip compression
+9. **Logging** - Structured JSON logs to Loki/Grafana
+
+#### Middleware Configuration Reference
+
+| Middleware | Default Setting | Production | Development | Configurable |
+|------------|----------------|------------|-------------|--------------|
+| **Timeout** | 30s | 30s | 30s | ✅ Via code |
+| **Max Request Size** | 10MB | 10MB | 10MB | ✅ Via code |
+| **Rate Limit** | - | 100 req/s (burst 200) | 1000 req/s (burst 2000) | ✅ Via code |
+| **CORS Origins** | Whitelist | Strict whitelist | `*` (all) | ✅ Via code |
+| **Compression** | Enabled | ✅ | ✅ | ❌ Always on |
+| **Security Headers** | Full suite | ✅ | ✅ | ❌ Always on |
+| **Request ID** | UUID v4 | ✅ | ✅ | ❌ Always on |
+| **Recovery** | Enabled | ✅ | ✅ | ❌ Always on |
+| **Logging** | Structured JSON | ✅ | ✅ | ❌ Always on |
+
+### Security Headers Applied
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `X-Content-Type-Options` | `nosniff` | Prevent MIME type sniffing |
+| `X-Frame-Options` | `DENY` | Prevent clickjacking attacks |
+| `X-XSS-Protection` | `1; mode=block` | Enable XSS filter (legacy) |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` | Force HTTPS for 2 years |
+| `Content-Security-Policy` | Restrictive policy | Control resource loading |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limit referrer leakage |
+| `Permissions-Policy` | Disabled features | Block dangerous browser APIs |
+| `Server` | (removed) | Hide server information |
+
 
 ## Prerequisites
 
@@ -94,12 +132,31 @@ make prod-stop
 │ ├── go/
 │ │ ├── go.mod               # Shared module definition
 │ │ ├── shared.go            # Example shared logic (e.g., logging, helpers)
-│ │ ├── utils/              # Utils
-│ │     └── logger/
+│ │ ├── utils/               # Utils
+│ │ │   ├── date/
+│ │ │   ├── files/
+│ │ │   └── arrays/
+│ │ ├── config/  
+│ │ ├── interfaces/  
+│ │ ├── middleware/  
+│ │ │   ├── healthMiddleware.go
+│ │ │   ├── loggingMiddleware.go
+│ │ │   ├── middlewareBuilder.go
+│ │ │   ├── rateLimitMiddleware.go
+│ │ │   ├── recoveryMiddleware.go
+│ │ │   ├── reverseProxyMiddleware.go
+│ │ │   └── timeoutMiddleware.go
+│ │ │   
+│ │ │ 
 │ │
 │ ├── react/
 │ │
 │ ├── data/
+│ │   └── config/ 
+│ │       ├── authConfig.json
+│ │       ├── baseConfig.json
+│ │       ├── regexConfig.json
+│ │       └── routeConfig.json
 │
 └── app/
   └── backend/
@@ -150,6 +207,35 @@ make dev     # Restart
 ### Hot-reload not working
 - Ensure volumes are correctly mounted
 - Check Air logs in service output
+
+## More Feature Details
+
+### Smart Client IP Extraction
+The gateway includes intelligent IP detection that works across different deployment scenarios:
+- **Cloudflare**: `CF-Connecting-IP` header (highest priority)
+- **Enterprise CDNs**: `True-Client-IP` header (Akamai, Cloudflare Enterprise)
+- **Nginx/Load Balancers**: `X-Real-IP` header
+- **Standard Proxies**: `X-Forwarded-For` header (takes first public IP)
+- **Direct Connection**: `RemoteAddr` (fallback)
+- **Security**: Filters private/internal IPs and validates against spoofing
+
+### Optional/Future Middlewares
+- **CSRF Protection**: Cross-Site Request Forgery prevention with token validation
+- **IP Filtering**: Whitelist/blacklist specific IP addresses or ranges
+- **API Key Authentication**: Validate `X-API-Key` headers for protected endpoints
+- **Circuit Breaker**: Prevent cascading failures by temporarily blocking failing services
+- **Metrics Middleware**: Export Prometheus metrics for monitoring
+- **Cloudflare Validation**: Verify requests truly originate from Cloudflare IPs
+
+### Production Readiness
+- **Environment-Aware Configuration**: Different settings for development vs. production
+  - Development: Permissive CORS (*), higher rate limits (1000 req/s), verbose logging
+  - Production: Strict CORS whitelist, lower rate limits (100 req/s), optimized performance
+- **Graceful Error Handling**: All panics caught and logged without service crashes
+- **Defense in Depth**: Multiple security layers (headers, rate limiting, size limits, timeouts)
+- **Observability**: Comprehensive logging with request IDs for debugging and monitoring
+- **Scalability**: Per-IP rate limiting allows horizontal scaling without shared state
+- **CDN Compatible**: Works seamlessly with Cloudflare, AWS CloudFront, Google Cloud CDN
 
 
 ## Contributing 
