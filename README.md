@@ -20,6 +20,8 @@ A production-ready monorepo template for building microservices with Go, featuri
 - **Log Visualization (Grafana)**: Beautiful web UI for searching, filtering, and analyzing logs across all services
 - **Automatic Log Collection (Promtail)**: Zero-config log aggregation from all Docker/Podman containers
 - **Structured JSON Logs**: All services output structured logs for easy parsing and analysis
+- **Event-Based Logging System**: Unique event codes (e.g., `MW-RL-001`, `AUTH-JWT-003`) for precise tracking, filtering, and analytics across all components
+- **Smart Log Categorization**: Events organized by category (Middleware, Auth, Service, Database, API) with dedicated helper functions for consistent structured logging
 - **Log Retention**: Configurable retention periods (7 days dev, 90 days prod)
 
 ### API Gateway Middleware Stack

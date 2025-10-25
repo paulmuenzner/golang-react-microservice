@@ -4,10 +4,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-
-	"github.com/app/shared/go/utils/conversion"
-	"github.com/app/shared/go/utils/logger"
-	misc "github.com/app/shared/go/utils/misc"
 )
 
 // ==========================================
@@ -79,53 +75,6 @@ func getClientIP(r *http.Request) string {
 	return "unknown"
 }
 
-// validateAndCleanIP validates and cleans an IP address string
-// Returns empty string if invalid
-func validateAndCleanIP(ip string) string {
-	ip = strings.TrimSpace(ip)
-
-	// Parse and validate IP
-	parsedIP := net.ParseIP(ip)
-	if parsedIP == nil {
-		return ""
-	}
-
-	return parsedIP.String()
-}
-
-// isPrivateIP checks if an IP is private/internal
-// Private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8
-func isPrivateIP(ipStr string) bool {
-	ip := net.ParseIP(ipStr)
-	if ip == nil {
-		return false
-	}
-
-	// Check for private IPv4 ranges
-	privateRanges := []string{
-		"10.0.0.0/8",     // Private network
-		"172.16.0.0/12",  // Private network
-		"192.168.0.0/16", // Private network
-		"127.0.0.0/8",    // Loopback
-		"169.254.0.0/16", // Link-local
-		"::1/128",        // IPv6 loopback
-		"fc00::/7",       // IPv6 private
-		"fe80::/10",      // IPv6 link-local
-	}
-
-	for _, cidr := range privateRanges {
-		_, network, err := net.ParseCIDR(cidr)
-		if err != nil {
-			continue
-		}
-		if network.Contains(ip) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // isCloudflareRequest checks if the request is coming through Cloudflare
 // Useful for additional validation or specific handling
 func IsCloudflareRequest(r *http.Request) bool {
@@ -133,29 +82,4 @@ func IsCloudflareRequest(r *http.Request) bool {
 	return r.Header.Get("CF-Ray") != "" ||
 		r.Header.Get("CF-Connecting-IP") != "" ||
 		r.Header.Get("CF-Visitor") != ""
-}
-
-// GetClientIPWithContext returns client IP with additional context
-// Useful for detailed logging and debugging
-func GetClientIPWithContext(r *http.Request) map[string]string {
-	context := map[string]string{
-		"ip":               getClientIP(r),
-		"remote_addr":      r.RemoteAddr,
-		"x_forwarded_for":  r.Header.Get("X-Forwarded-For"),
-		"x_real_ip":        r.Header.Get("X-Real-IP"),
-		"cf_connecting_ip": r.Header.Get("CF-Connecting-IP"),
-		"true_client_ip":   r.Header.Get("True-Client-IP"),
-		"via_cloudflare":   conversion.BoolToString(IsCloudflareRequest(r)),
-	}
-
-	// Log if IP extraction seems suspicious
-	if context["ip"] == "unknown" || isPrivateIP(context["ip"]) {
-		requestID := misc.GetRequestID(r)
-		logger.WarnWithFields("Suspicious IP extraction", map[string]interface{}{
-			"request_id": requestID,
-			"context":    context,
-		})
-	}
-
-	return context
 }
