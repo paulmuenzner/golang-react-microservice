@@ -87,13 +87,14 @@ make init
 
 ### 2. Development
 ```bash
-# Start all services with hot-reload
-make dev
+# 1. Create .env file
+cp .env.example .env
 
-# Or start services individually
-make dev-a  # service-a only
-make dev-b  # service-b only
-make dev-g  # gateway only
+# 2. Run database migrations
+make db-migrate
+
+# 3. Start development services
+make dev # Automatically runs: db-migrate → dev-up
 ```
 
 **Services available at:**
@@ -107,6 +108,8 @@ make test
 ```
 
 ## Production Deployment 🚢
+
+### App start
 ```bash
 # Build production images
 make prod
@@ -118,6 +121,20 @@ make prod-up
 make prod-stop
 ```
 
+### Database migration
+```bash
+# 1. Backup erstellen
+make prod-db-backup
+
+# 2. Migration testen (optional: auf Staging)
+make prod-db-migrate
+
+# 3. Services starten
+podman-compose -f docker-compose.prod.yml up -d
+
+# 4. Health-Check
+make prod-db-status
+```
 
 ## Project Structure
 

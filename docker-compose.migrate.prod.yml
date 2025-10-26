@@ -1,0 +1,36 @@
+# docker-compose.migrate.prod.yml
+
+services:
+  db-migrator:
+    build:
+      context: .
+      dockerfile: shared/go/utils/db/migrator/Dockerfile.migrator
+      args:
+        GO_VERSION: ${GO_VERSION}
+    environment:
+      DB_HOST: ${POSTGRES_HOST}  
+      DB_PORT: ${PORT_POSTGRES}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_NAME}
+      DB_SSLMODE: ${DB_SSLMODE_PROD}
+      # Connection Pool Settings
+      DB_MAX_OPEN_CONNS: ${DB_MAX_OPEN_CONNS}
+      DB_MAX_IDLE_CONNS: ${DB_MAX_IDLE_CONNS}
+      MIGRATIONS_ROOT: /app/migrations
+    restart: "no"
+    networks:
+      - ${NETWORK_BACKEND_PROD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  prod_backend:
+    name: ${NETWORK_BACKEND_PROD}
+    external: true
+
+volumes:
+  postgres_data_prod:
+    external: true
+    name: ${VOLUME_POSTGRES_PROD}

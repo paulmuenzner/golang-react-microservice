@@ -1,0 +1,51 @@
+# shared/go/db/migrator/Dockerfile.migrator
+
+ARG GO_VERSION
+
+###############################################
+################# BUILDER #####################
+###############################################
+
+FROM docker.io/library/golang:${GO_VERSION}-alpine AS builder
+
+# Build dependencies
+RUN apk add --no-cache git ca-certificates
+
+WORKDIR /build
+
+# Copy Go module files
+COPY shared/go/go.mod shared/go/go.sum ./shared/go/
+
+# Download dependencies
+WORKDIR /build/shared/go
+RUN go mod download
+
+# Copy the entire shared code
+WORKDIR /build
+COPY shared/go ./shared/go
+
+# Build the migrator
+WORKDIR /build/shared/go/utils/db/migrator
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o migrator .
+
+
+###############################################
+################# RUNTIME #####################
+###############################################
+
+# Runtime stage (minimal)
+FROM alpine:latest
+
+# Install ca-certificates and timezone data
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /build
+
+# Copy compiled binary
+COPY --from=builder /build/shared/go/utils/db/migrator/migrator .
+
+# Copy migration files from correct path
+COPY app/backend/*/db/migrations ./migrations/
+
+# Run migrator
+CMD ["./migrator"]

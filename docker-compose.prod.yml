@@ -1,3 +1,5 @@
+# docker-compose.prod.yml
+
 version: "3.9"
 
 services:
@@ -7,23 +9,34 @@ services:
   # ==========================================
 
   postgres:
-    image: docker.io/library/postgres:18-alpine
-    container_name: postgres-dev
+    image: docker.io/library/postgres:${POSTGRES_VERSION}-alpine
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_DB=${POSTGRES_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - []
+    expose:
+      - "5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped  # Production restart policy
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
+    deploy:  # For Docker Swarm / Kubernetes
+      replicas: 1
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
 
   # ==========================================
   # SERVICES
@@ -41,8 +54,8 @@ services:
       - "8080:8080" # Gateway exposed to host
     restart: unless-stopped
     networks:
-      - frontend
-      - backend
+      - ${NETWORK_FRONTEND_PROD}
+      - ${NETWORK_BACKEND}
     depends_on:
       service-a:
         condition: service_healthy
@@ -62,7 +75,7 @@ services:
       - "8080" # only internal
     restart: unless-stopped
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -82,7 +95,7 @@ services:
       - "8080"
     restart: unless-stopped
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -110,7 +123,7 @@ services:
         max-size: "50m"
         max-file: "5"
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   promtail:
     image: docker.io/grafana/promtail:2.9.0
@@ -128,7 +141,7 @@ services:
     depends_on:
       - loki
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   grafana:
     image: docker.io/grafana/grafana:10.0.0
@@ -151,7 +164,7 @@ services:
     depends_on:
       - loki
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
 networks:
   frontend:
@@ -162,7 +175,7 @@ networks:
 volumes:
   loki-data:
   grafana-data:
-  postgres-data:  
+  postgres_data_prod:  
     driver: local
     driver_opts:
       type: none

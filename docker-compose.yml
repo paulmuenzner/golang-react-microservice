@@ -8,32 +8,32 @@ services:
   # ==========================================
   
   postgres:
-    image: docker.io/library/postgres:18-alpine
-    container_name: postgres-dev
+    image: docker.io/library/postgres:${POSTGRES_VERSION}-alpine
+    container_name: ${CONTAINER_POSTGRES}
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_DB=${POSTGRES_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"  
+      - "${PORT_POSTGRES}:5432"  
     volumes:
-      - postgres-data:/var/lib/postgresql/data  
+      - ${VOLUME_POSTGRES:-postgres-data}:/var/lib/postgresql/data
       - ./shared/data/migrations:/docker-entrypoint-initdb.d:ro  
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   # ==========================================
   # SERVICES
   # ==========================================
 
   gateway:
-    container_name: gateway-dev
+    container_name: ${CONTAINER_GATEWAY}
     build:
       context: . 
       dockerfile: app/backend/gateway/Dockerfile
@@ -41,7 +41,7 @@ services:
       args:
         GO_VERSION: ${GO_VERSION}
     ports:
-      - "8080:8080"   # Only gateway is exposed to host
+      - "${PORT_GATEWAY}:8080"   # Only gateway is exposed to host
     volumes:
       - ./app/backend/gateway:/build/app/backend/gateway:cached
       - ./shared/go:/build/shared/go:cached
@@ -49,7 +49,7 @@ services:
       - /build/app/backend/gateway/tmp
     environment:
       - ENVIRONMENT=development
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=${DB_SSLMODE_DEV:-disable}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -65,11 +65,11 @@ services:
     stop_grace_period: 30s
     stop_signal: SIGTERM
     networks:
-      - frontend
-      - backend
+      - ${NETWORK_FRONTEND}
+      - ${NETWORK_BACKEND}
 
   service-a:
-    container_name: service-a-dev
+    container_name: ${CONTAINER_SERVICE_A}
     build:
       context: .
       dockerfile: app/backend/service-a/Dockerfile
@@ -85,7 +85,7 @@ services:
       - /build/app/backend/service-a/tmp
     environment:
       - ENVIRONMENT=development
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=${DB_SSLMODE_DEV:-disable}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -98,10 +98,10 @@ services:
     stop_grace_period: 30s
     stop_signal: SIGTERM
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   service-b:
-    container_name: service-b-dev
+    container_name: ${CONTAINER_SERVICE_B}
     build:
       context: .
       dockerfile: app/backend/service-b/Dockerfile
@@ -117,7 +117,7 @@ services:
       - /build/app/backend/service-b/tmp
     environment:
       - ENVIRONMENT=development
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=${DB_SSLMODE_DEV:-disable}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -130,7 +130,7 @@ services:
     stop_grace_period: 30s
     stop_signal: SIGTERM
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   # ==========================================
   # LOGGING STACK (NEU)
@@ -138,20 +138,20 @@ services:
   
   loki:
     image: docker.io/grafana/loki:2.9.0
-    container_name: loki
+    container_name: ${CONTAINER_LOKI}
     ports:
-      - "3100:3100"
+      - "${PORT_LOKI}:3100"
     volumes:
       - ./config/loki.yaml:/etc/loki/local-config.yaml
-      - loki-data:/loki
+      - ${VOLUME_LOKI:-loki-data}:/loki
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   promtail:
     image: docker.io/grafana/promtail:2.9.0
-    container_name: promtail
+    container_name: ${CONTAINER_PROMTAIL}
     volumes:
       - /run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
       - ./config/promtail.yaml:/etc/promtail/config.yml
@@ -160,30 +160,35 @@ services:
     depends_on:
       - loki
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
   grafana:
     image: docker.io/grafana/grafana:10.0.0
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "${PORT_GRAFANA}:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
-      - grafana-data:/var/lib/grafana
+      - ${VOLUME_GRAFANA}:/var/lib/grafana
     restart: unless-stopped
     depends_on:
       - loki
     networks:
-      - backend
+      - ${NETWORK_BACKEND}
 
 networks:
   frontend:
+    name: ${NETWORK_FRONTEND}
     driver: bridge
   backend:
+    name: ${NETWORK_BACKEND}
     driver: bridge
 
 volumes:
   loki-data:
+    name: ${VOLUME_LOKI}
   grafana-data:
+    name: ${VOLUME_GRAFANA}
   postgres-data:
+    name: ${VOLUME_POSTGRES}

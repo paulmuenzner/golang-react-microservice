@@ -10,7 +10,7 @@ import "time"
 
 // LogEvent logs a structured event with standardized fields
 func LogEvent(event ILogEvent, fields map[string]interface{}) {
-	if AppLogger == nil {
+	if appLogger == nil {
 		return
 	}
 
@@ -24,16 +24,16 @@ func LogEvent(event ILogEvent, fields map[string]interface{}) {
 	// Log at appropriate level
 	switch event.Level {
 	case LevelDebug:
-		AppLogger.DebugWithFields(event.Message, fields)
+		appLogger.DebugWithFields(event.Message, fields)
 	case LevelInfo:
-		AppLogger.InfoWithFields(event.Message, fields)
+		appLogger.InfoWithFields(event.Message, fields)
 	case LevelWarn:
-		AppLogger.WarnWithFields(event.Message, fields)
+		appLogger.WarnWithFields(event.Message, fields)
 	case LevelError:
 		if err, ok := fields["error"].(error); ok {
-			AppLogger.ErrorWithFields(event.Message, err, fields)
+			appLogger.ErrorWithFields(event.Message, err, fields)
 		} else {
-			AppLogger.ErrorWithFields(event.Message, nil, fields)
+			appLogger.ErrorWithFields(event.Message, nil, fields)
 		}
 	}
 }

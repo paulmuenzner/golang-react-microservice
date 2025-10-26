@@ -1,0 +1,17 @@
+# .github/workflows/deploy.yml
+
+jobs:
+  deploy:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Run DB Migrations
+        run: make db-migrate
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      
+      - name: Deploy Services
+        run: make prod-deploy
+        # Nur wenn Migrations erfolgreich!

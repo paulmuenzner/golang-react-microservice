@@ -49,11 +49,11 @@ func loadRelativeConfig(configPath string, configStruct interface{}) error {
 // Route configurations
 var (
 	routeConfigOnce sync.Once
-	RouteConfig     interfaceconfig.RouteConfig
+	RouteConfig     interfaceconfig.IRouteConfig
 	routeConfigErr  error
 )
 
-func LoadRouteConfig() (interfaceconfig.RouteConfig, error) {
+func LoadRouteConfig() (interfaceconfig.IRouteConfig, error) {
 	routeConfigOnce.Do(func() {
 		const relativePath = "../../data/config/routeConfig.json"
 		routeConfigErr = loadRelativeConfig(relativePath, &RouteConfig)

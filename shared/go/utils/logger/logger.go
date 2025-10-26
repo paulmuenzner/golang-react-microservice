@@ -15,7 +15,8 @@ type Logger struct {
 	zlog zerolog.Logger
 }
 
-var AppLogger *Logger
+// appLogger is the global logger instance (PRIVATE - not exported)
+var appLogger *Logger
 
 // Init initializes the global logger
 // serviceName: Name of the microservice (e.g. "gateway", "service-a")
@@ -45,7 +46,7 @@ func Init(serviceName, environment string) {
 		Str("service", serviceName).
 		Logger()
 
-	AppLogger = &Logger{zlog: logger}
+	appLogger = &Logger{zlog: logger}
 	log.Logger = logger // Set as global default
 }
 
@@ -180,85 +181,85 @@ func (l *Logger) HTTPWithFields(method, path string, statusCode int, duration ti
 // (Can be used without creating Logger instance)
 // ==========================================
 
-// func Debug(msg string) {
-// 	if AppLogger != nil {
-// 		AppLogger.Debug(msg)
-// 	}
-// }
+func Debug(msg string) {
+	if appLogger != nil {
+		appLogger.Debug(msg)
+	}
+}
 
 func DebugWithFields(msg string, fields map[string]interface{}) {
-	if AppLogger != nil {
-		AppLogger.DebugWithFields(msg, fields)
+	if appLogger != nil {
+		appLogger.DebugWithFields(msg, fields)
 	}
 }
 
-// func Info(msg string) {
-// 	if AppLogger != nil {
-// 		AppLogger.Info(msg)
-// 	}
-// }
+func Info(msg string) {
+	if appLogger != nil {
+		appLogger.Info(msg)
+	}
+}
 
 func InfoWithFields(msg string, fields map[string]interface{}) {
-	if AppLogger != nil {
-		AppLogger.InfoWithFields(msg, fields)
+	if appLogger != nil {
+		appLogger.InfoWithFields(msg, fields)
 	}
 }
 
-// func Warn(msg string) {
-// 	if AppLogger != nil {
-// 		AppLogger.Warn(msg)
-// 	}
-// }
+func Warn(msg string) {
+	if appLogger != nil {
+		appLogger.Warn(msg)
+	}
+}
 
 func WarnWithFields(msg string, fields map[string]interface{}) {
-	if AppLogger != nil {
-		AppLogger.WarnWithFields(msg, fields)
+	if appLogger != nil {
+		appLogger.WarnWithFields(msg, fields)
 	}
 }
 
-// func Error(msg string, err error) {
-// 	if AppLogger != nil {
-// 		AppLogger.Error(msg, err)
-// 	}
-// }
+func Error(msg string, err error) {
+	if appLogger != nil {
+		appLogger.Error(msg, err)
+	}
+}
 
 func ErrorWithFields(msg string, err error, fields map[string]interface{}) {
-	if AppLogger != nil {
-		AppLogger.ErrorWithFields(msg, err, fields)
+	if appLogger != nil {
+		appLogger.ErrorWithFields(msg, err, fields)
 	}
 }
 
-// func Fatal(msg string, err error) {
-// 	if AppLogger != nil {
-// 		AppLogger.Fatal(msg, err)
-// 	}
-// }
+func Fatal(msg string, err error) {
+	if appLogger != nil {
+		appLogger.Fatal(msg, err)
+	}
+}
 
 func FatalWithFields(msg string, err error, fields map[string]interface{}) {
-	if AppLogger != nil {
+	if appLogger != nil {
 		// Wir rufen die neu definierte Methode auf
-		AppLogger.FatalWithFields(msg, err, fields)
+		appLogger.FatalWithFields(msg, err, fields)
 	}
 }
 
 func HTTP(method, path string, statusCode int, duration time.Duration, clientIP string) {
-	if AppLogger != nil {
-		AppLogger.HTTP(method, path, statusCode, duration, clientIP)
+	if appLogger != nil {
+		appLogger.HTTP(method, path, statusCode, duration, clientIP)
 	}
 }
 
 // WithRequestID creates a logger with request ID
 func WithRequestID(requestID string) *Logger {
-	if AppLogger != nil {
-		return AppLogger.WithField("request_id", requestID)
+	if appLogger != nil {
+		return appLogger.WithField("request_id", requestID)
 	}
 	return nil
 }
 
 // WithUserID creates a logger with user ID
 func WithUserID(userID string) *Logger {
-	if AppLogger != nil {
-		return AppLogger.WithField("user_id", userID)
+	if appLogger != nil {
+		return appLogger.WithField("user_id", userID)
 	}
 	return nil
 }
