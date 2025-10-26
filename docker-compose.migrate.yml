@@ -5,12 +5,11 @@ services:
   
   postgres:
     image: docker.io/library/postgres:${POSTGRES_VERSION}-alpine
-    container_name: ${CONTAINER_POSTGRES}
+    container_name: ${POSTGRES_HOST}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}           
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}   
       POSTGRES_DB: ${POSTGRES_NAME}            
-    env_file: .env
     ports:
       - "${PORT_POSTGRES}:5432"
     volumes:
@@ -41,11 +40,15 @@ services:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_NAME}
-      DB_SSLMODE: ${DB_SSLMODE_DEV:-disable}
+      DB_SSLMODE: ${DB_SSLMODE_DEV}
       
       # Connection Pool
       POSTGRES_MAX_OPEN_CONNS: ${POSTGRES_MAX_OPEN_CONNS}
       POSTGRES_MAX_IDLE_CONNS: ${POSTGRES_MAX_IDLE_CONNS}
+
+      # MIGRATION CONTROL: These must be passed from the Makefile
+      MIGRATION_DIRECTION: ${MIGRATION_DIRECTION}
+      ROLLBACK_STEPS: ${ROLLBACK_STEPS}
       
       # Migration root (in container)
       MIGRATIONS_ROOT: /build/migrations

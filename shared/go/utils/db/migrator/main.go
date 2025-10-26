@@ -172,8 +172,12 @@ func discoverMigrationPaths(root string) ([]string, error) {
 			downFiles, _ := filepath.Glob(filepath.Join(path, "*.down.sql"))
 			sqlFiles, _ := filepath.Glob(filepath.Join(path, "*.sql"))
 
-			if len(upFiles) > 0 || len(downFiles) > 0 || len(sqlFiles) > 0 {
-				paths = append(paths, path)
+			hasSQLFiles := len(upFiles) > 0 || len(downFiles) > 0 || len(sqlFiles) > 0
+
+			if hasSQLFiles {
+				if path != root {
+					paths = append(paths, path)
+				}
 			}
 		}
 		return nil
@@ -192,11 +196,19 @@ func extractServiceName(path string) string {
 	parts := strings.Split(filepath.Clean(path), string(filepath.Separator))
 
 	for i := len(parts) - 1; i >= 0; i-- {
-		if parts[i] == "migrations" && i > 0 {
-			return parts[i-1]
+		if parts[i] == "migrations" {
+			// Wenn "db" davor ist, nimm das davor (Service-Name)
+			if i >= 2 && parts[i-1] == "db" {
+				return parts[i-2] // users, templates, etc.
+			}
+			// Fallback: if directly after /build/migrations/SERVICE
+			if i > 0 && parts[i-1] != "build" {
+				return parts[i-1]
+			}
 		}
 	}
 
+	// Letzter Fallback
 	return filepath.Base(path)
 }
 
@@ -401,32 +413,42 @@ func runMigrationsDown(db *sql.DB, migrationsPath string, logger *log.Logger) er
 			continue
 		}
 
-		// Prüfe ob diese Version überhaupt angewendet wurde
-		found := false
-		for _, v := range appliedVersions {
-			if v == version {
-				found = true
-				break
-			}
+		// Prüfe ob UP-Migration existiert
+		var upExists bool
+		err = db.QueryRow(
+			"SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1 AND service = $2 AND direction = 'up')",
+			version, serviceName,
+		).Scan(&upExists)
+		if err != nil {
+			return fmt.Errorf("failed to check up migration status: %w", err)
 		}
 
-		if !found {
+		if !upExists {
 			logger.Printf("   ⏭️  [v%03d] %s (not applied, skipping)", version, description)
 			skippedCount++
 			continue
 		}
 
-		// Prüfe ob DOWN bereits ausgeführt wurde
-		var downExists bool
+		// Prüfe ob DOWN bereits NACH dem letzten UP ausgeführt wurde
+		var lastUpTime, lastDownTime sql.NullTime
 		err = db.QueryRow(
-			"SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1 AND service = $2 AND direction = 'down')",
+			"SELECT MAX(applied_at) FROM schema_migrations WHERE version = $1 AND service = $2 AND direction = 'up'",
 			version, serviceName,
-		).Scan(&downExists)
+		).Scan(&lastUpTime)
 		if err != nil {
-			return fmt.Errorf("failed to check down migration status: %w", err)
+			return fmt.Errorf("failed to get last up time: %w", err)
 		}
 
-		if downExists {
+		err = db.QueryRow(
+			"SELECT MAX(applied_at) FROM schema_migrations WHERE version = $1 AND service = $2 AND direction = 'down'",
+			version, serviceName,
+		).Scan(&lastDownTime)
+		if err != nil {
+			return fmt.Errorf("failed to get last down time: %w", err)
+		}
+
+		// Wenn DOWN nach UP ausgeführt wurde, ist es bereits gerollt
+		if lastDownTime.Valid && lastUpTime.Valid && lastDownTime.Time.After(lastUpTime.Time) {
 			logger.Printf("   ⏭️  [v%03d] %s (already rolled back)", version, description)
 			skippedCount++
 			continue

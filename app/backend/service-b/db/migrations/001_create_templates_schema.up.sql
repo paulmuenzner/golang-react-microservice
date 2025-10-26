@@ -1,55 +1,30 @@
-
+-- app/backend/service-b/db/migrations/001_create_templates_table.sql
 CREATE SCHEMA IF NOT EXISTS templates;
 
-CREATE TABLE IF NOT EXISTS templates.profile_objects (
-    -- Eindeutige ID für den Datensatz
-    id BIGSERIAL PRIMARY KEY, 
-    
-    -- NEUE PFLICHTFELDER FÜR PROFILGRUPPIERUNG
-    
-    -- ID des Lastprofils (maximal zweistellig, z.B. 1-99). Pflichtfeld.
-    -- Damit man zuordnen kann ob LP1, LP2, ... gemeint ist.
-    load_profile SMALLINT NOT NULL,
-    -- Die Versionsnummer des Profils (ganzzahlig, aufsteigend). Pflichtfeld.
-    -- Falls es eine Änderung des spezifischen Objektes gibt, wird die Versionsnummer erhöht. Alte Objekte werden nicht gelöscht, da sie noch von gespeicherten Templates genutzt werden können und dann fehlen würden
-    version INT NOT NULL,
-    -- Eindeutige Kennung des Objekts (ganzzahlig). Pflichtfeld.
-    -- Jeder Objekttyp muss eine eindeutige Kennung haben. Sie ist nur identisch bei Objekten wo sich die Versionsnummer erhöht hat. So kann man via objekt_kennung alle versionen abfragen.
-    objekt_kennung INT NOT NULL,
-    
-    -- ALLGEMEIN GÜLTIGE FELDER (enthalten in DataItem1 und DataItem2)
-    
-    -- Interner technischer Name
-    name VARCHAR(255) NOT NULL, 
-    -- Deutscher Name
-    name_de VARCHAR(255) NOT NULL, 
-    -- Englischer Name
-    name_en VARCHAR(255) NOT NULL, 
-    
-    -- Identifikationsattribute des Objekts
-    obis_code VARCHAR(50) NOT NULL,
-    class_id VARCHAR(50) NOT NULL,
-    attribute_id VARCHAR(50) NOT NULL,
-    
-    -- Anzeige- und Verarbeitungsparameter
-    column_order INT NOT NULL, 
-    type VARCHAR(50) NOT NULL, 
-    data_type VARCHAR(50) NOT NULL,
-    
-    -- Optionales Feld (lpName ist bereits optional in TS)
-    lp_name VARCHAR(255) NULL, 
-    
-    -- SPEZIFISCHE FELDER VON DataItem1 (optional/NULL)
-    
-    -- Maßeinheit, z.B. 'kWh', 'A'
-    unit VARCHAR(50) NULL, 
-    -- Skalierungsfaktor (Potenz von 10)
-    scaler INT NULL, 
-    -- IEC-Code oder anderer Branchenstandardcode
-    iec_code VARCHAR(50) NULL
+
+
+-- Users table
+CREATE TABLE IF NOT EXISTS templates.userstemps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indices zur Beschleunigung der Suche nach Identifikatoren
+-- Index for faster lookups
+CREATE INDEX idx_users_email ON templates.userstemps(email);
+CREATE INDEX idx_users_username ON templates.userstemps(username);
 
--- Index für die Lastprofilsuche
-CREATE INDEX idx_profile_objects_load_profile ON templates.profile_objects (load_profile);
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON templates.userstemps
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -44,8 +44,8 @@ WORKDIR /build
 # Copy compiled binary
 COPY --from=builder /build/shared/go/utils/db/migrator/migrator .
 
-# Copy migration files from correct path
-COPY app/backend/*/db/migrations ./migrations/
+# Copy migration files with service structure preserved
+COPY app/backend ./migrations
 
 # Run migrator
 CMD ["./migrator"]

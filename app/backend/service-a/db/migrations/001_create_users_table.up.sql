@@ -1,4 +1,4 @@
--- app/backend/users/db/migrations/001_create_users_table.sql
+-- app/backend/service-a/db/migrations/001_create_users_table.up.sql
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
