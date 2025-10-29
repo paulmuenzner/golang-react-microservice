@@ -4,7 +4,7 @@
 
 .PHONY: db-migrate db-rollback db-rollback-all db-status db-tables db-schemas \
         db-connect db-logs db-clean db-reset db-backup db-restore \
-        db-tablespaces db-storage-report
+        db-tablespaces db-storage-report db-apply db-exec
 
 # ==========================================
 # Migration Commands
@@ -511,6 +511,44 @@ db-move-to-ssd: ## Move a table to SSD (Usage: make db-move-to-ssd TABLE=schema.
 		echo "❌ Failed to move table"
 
 # ==========================================
+# Manual migration
+# ==========================================
+
+db-apply: ## Apply SQL WITH duplicate check (Usage: make db-apply FILE=... SERVICE=... VERSION=... DESC=...)
+	@if [ -z "$(FILE)" ] || [ -z "$(SERVICE)" ] || [ -z "$(VERSION)" ]; then \
+		echo "❌ Missing parameters!"; \
+		echo "Usage: make db-apply FILE=002.up.sql SERVICE=service-a VERSION=2 DESC='add column'"; \
+		exit 1; \
+	fi
+	@echo "🔍 Checking if migration already applied..."
+	@APPLIED=$$(podman exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_NAME) -tAc \
+		"SELECT COUNT(*) FROM schema_migrations WHERE service='$(SERVICE)' AND version=$(VERSION) AND direction='up'"); \
+	if [ "$$APPLIED" -gt 0 ]; then \
+		echo "❌ Migration already applied!"; \
+		echo "   Service: $(SERVICE)"; \
+		echo "   Version: $(VERSION)"; \
+		echo ""; \
+		echo "Check status: make db-status SERVICE=$(SERVICE)"; \
+		exit 1; \
+	fi
+	@echo "✅ Not applied yet, proceeding..."
+	@echo ""
+	@echo "📝 Applying: $(FILE)"
+	@echo "   Service: $(SERVICE)"
+	@echo "   Version: $(VERSION)"
+	@echo ""
+	@podman exec -i postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_NAME) < $(FILE) && \
+	podman exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_NAME) -c \
+		"INSERT INTO schema_migrations (version, service, description, direction, applied_at) \
+		 VALUES ($(VERSION), '$(SERVICE)', '$(DESC)', 'up', NOW())" && \
+	echo "" && \
+	echo "✅ Migration applied and tracked!"
+
+db-exec: ## Quick SQL command
+	@podman exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_NAME) -c "$(SQL)"
+
+
+# ==========================================
 # Help
 # ==========================================
 
@@ -522,6 +560,7 @@ db-help: ## Show all database commands
 	@echo "🔧 Migration:"
 	@echo "  make db-migrate          - Run all migrations (UP)"
 	@echo "  make db-rollback         - Rollback last migration (DOWN)"
+	@echo "  make db-apply            - Manual migration (DOWN & UP)"
 	@echo "  make db-rollback-all     - Rollback ALL migrations (DANGEROUS)"
 	@echo ""
 	@echo "📊 Status & Info:"
@@ -529,6 +568,7 @@ db-help: ## Show all database commands
 	@echo "  make db-tables           - Show user tables"
 	@echo "  make db-tables-all       - Show all tables (incl. system)"
 	@echo "  make db-schemas          - Show all schemas"
+	@echo "  make db-exec             - Quick SQL command"
 	@echo ""
 	@echo "🔌 Connection:"
 	@echo "  make db-connect          - Connect to PostgreSQL via psql"

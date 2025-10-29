@@ -27,6 +27,30 @@ services:
     networks:
       - ${NETWORK_BACKEND}
 
+
+  # ==========================================
+  # MESSAGE BROKER (RabbitMQ)
+  # ==========================================
+  rabbitmq:
+    image: docker.io/library/rabbitmq:${RABBITMQ_VERSION}-management-alpine # Includes Management UI
+    container_name: ${RABBITMQ_CONTAINER_NAME}
+    hostname: ${RABBITMQ_HOST_NAME}
+    environment:
+      # Standard credentials (should be set via .env!)
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_AMQP_PORT}:5672" # Standard AMQP Port
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672" # Management UI Port
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - ${NETWORK_BACKEND}
+    restart: always
+
   # ==========================================
   # SERVICES
   # ==========================================
@@ -116,7 +140,7 @@ services:
       - /build/app/backend/service-b/tmp
     environment:
       - ENVIRONMENT=development
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=${DB_SSLMODE_DEV:-disable}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${PORT_POSTGRES}/${POSTGRES_NAME}?sslmode=${DB_SSLMODE_DEV}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -130,6 +154,7 @@ services:
     stop_signal: SIGTERM
     networks:
       - ${NETWORK_BACKEND}
+
 
   # ==========================================
   # LOGGING STACK (NEU)
