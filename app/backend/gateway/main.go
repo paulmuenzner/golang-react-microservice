@@ -24,6 +24,26 @@ func main() {
 	// Create router
 	mux := http.NewServeMux()
 
+	// Root route - Gateway info
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{
+			"service": "gateway",
+			"version": "1.0.0",
+			"status": "running",
+			"endpoints": {
+				"health": "/health",
+				"service-a": "/service-a/*",
+				"service-b": "/service-b/*"
+			}
+		}`))
+	})
+
 	// Register service routes
 	mux.Handle("/service-a/", middleware.NewProxy("http://service-a:8080", "/service-a"))
 	mux.Handle("/service-b/", middleware.NewProxy("http://service-b:8080", "/service-b"))

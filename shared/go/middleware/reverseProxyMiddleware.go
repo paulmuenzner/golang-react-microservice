@@ -31,6 +31,12 @@ func NewProxy(target string, prefix string) http.Handler {
 		}
 	}
 
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		// Remove Content-Length - Go recalculates a new one after compression
+		resp.Header.Del("Content-Length")
+		return nil
+	}
+
 	// Configure transport with reasonable timeouts
 	proxy.Transport = &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
