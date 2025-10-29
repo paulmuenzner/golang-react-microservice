@@ -32,24 +32,54 @@ services:
   # MESSAGE BROKER (RabbitMQ)
   # ==========================================
   rabbitmq:
-    image: docker.io/library/rabbitmq:${RABBITMQ_VERSION}-management-alpine # Includes Management UI
+    image: docker.io/library/rabbitmq:${RABBITMQ_VERSION}-management-alpine
     container_name: ${RABBITMQ_CONTAINER_NAME}
     hostname: ${RABBITMQ_HOST_NAME}
+
     environment:
-      # Standard credentials (should be set via .env!)
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      # ✅ Configurations
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-secret-cookie-change-in-production}
+
     ports:
-      - "${RABBITMQ_AMQP_PORT}:5672" # Standard AMQP Port
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672" # Management UI Port
+      - "${RABBITMQ_AMQP_PORT}:5672"
+      # ✅ Management UI nur in Dev!
+      - target: 15672
+        published: ${RABBITMQ_MANAGEMENT_PORT}
+        protocol: tcp
+        mode: host
+
+    volumes:
+      # ✅ Persistence!
+      - ${VOLUME_RABBITMQ:-rabbitmq-data}:/var/lib/rabbitmq
+      # ✅ Custom Config
+      - ./config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      # ✅ Definitions (Queues/Exchanges)
+      - ./config/rabbitmq-definitions.json:/etc/rabbitmq/definitions.json:ro
+
+    # ✅ Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 30s
-      timeout: 30s
-      retries: 3
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    restart: unless-stopped  # ✅ Not "always"
+
     networks:
       - ${NETWORK_BACKEND}
-    restart: always
 
   # ==========================================
   # SERVICES
@@ -192,7 +222,10 @@ services:
     ports:
       - "${PORT_GRAFANA}:3000"
     environment:
+      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - ${VOLUME_GRAFANA}:/var/lib/grafana
     restart: unless-stopped
@@ -216,3 +249,5 @@ volumes:
     name: ${VOLUME_GRAFANA}
   postgres-data:
     name: ${VOLUME_POSTGRES}
+  rabbitmq-data:
+    name: ${VOLUME_RABBITMQ}

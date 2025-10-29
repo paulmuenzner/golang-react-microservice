@@ -13,20 +13,31 @@ services:
     environment:
       - POSTGRES_DB=${POSTGRES_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    
     expose:
       - "5432"
+    
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      - ${VOLUME_POSTGRES_PROD}:/var/lib/postgresql/data
+      # ✅ Backup directory
+      - ${BACKUP_DIR:-./backups/postgres}:/backups
+    
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped  # Production restart policy
+      start_period: 30s
+    
+    restart: unless-stopped
+    
     networks:
       - ${NETWORK_BACKEND}
-    deploy:  # For Docker Swarm / Kubernetes
+    
+    deploy:
       replicas: 1
       resources:
         limits:
@@ -35,70 +46,248 @@ services:
         reservations:
           cpus: '1'
           memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   # ==========================================
   # SERVICES
   # ==========================================
 
   gateway:
+    image: ${REGISTRY:-localhost}/gateway:${VERSION:-latest}
     build:
       context: .
       dockerfile: app/backend/gateway/Dockerfile
-      target: builder # Production stage
-    image: gateway:latest
+      target: production  # ✅ production stage!
+      args:
+        GO_VERSION: ${GO_VERSION}
+    
     environment:
       - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=require
+      # ✅ Production configs
+      - MAX_REQUEST_SIZE=10485760  # 10MB
+      - RATE_LIMIT_RPS=100
+      - RATE_LIMIT_BURST=200
+    
     ports:
-      - "8080:8080" # Gateway exposed to host
+      - "${PORT_GATEWAY:-8080}:8080"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+      start_period: 10s
+    
     restart: unless-stopped
+    
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    
     networks:
-      - ${NETWORK_FRONTEND_PROD}
+      - ${NETWORK_FRONTEND}
       - ${NETWORK_BACKEND}
+    
     depends_on:
       service-a:
         condition: service_healthy
       service-b:
         condition: service_healthy
+    
+    deploy:
+      replicas: 2  # ✅ Load balancing
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   service-a:
+    image: ${REGISTRY:-localhost}/service-a:${VERSION:-latest}
+    
     build:
       context: .
       dockerfile: app/backend/service-a/Dockerfile
-      target: builder # Production stage
-    image: service-a:latest
+      target: production
+      args:
+        GO_VERSION: ${GO_VERSION}
+    
     environment:
       - ENVIRONMENT=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=require
+    
     expose:
-      - "8080" # only internal
-    restart: unless-stopped
-    networks:
-      - ${NETWORK_BACKEND}
+      - "8080"
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 2s
       retries: 5
+      start_period: 10s
+    
+    restart: unless-stopped
+    
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    
+    networks:
+      - ${NETWORK_BACKEND}
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   service-b:
+    image: ${REGISTRY:-localhost}/service-b:${VERSION:-latest}
+    
     build:
       context: .
       dockerfile: app/backend/service-b/Dockerfile
-      target: builder # Production stage
-    image: service-b:latest
+      target: production
+      args:
+        GO_VERSION: ${GO_VERSION}
+    
     environment:
       - ENVIRONMENT=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_NAME}?sslmode=require
+    
     expose:
       - "8080"
-    restart: unless-stopped
-    networks:
-      - ${NETWORK_BACKEND}
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 2s
       retries: 5
+      start_period: 10s
+    
+    restart: unless-stopped
+    
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    
+    networks:
+      - ${NETWORK_BACKEND}
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+
+# ==========================================
+  # MESSAGE BROKER (Optional)
+  # ==========================================
+
+  rabbitmq:
+    image: docker.io/library/rabbitmq:${RABBITMQ_VERSION}-management-alpine
+    hostname: ${RABBITMQ_HOST_NAME}
+    
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/rabbitmq_password
+      - RABBITMQ_ERLANG_COOKIE_FILE=/run/secrets/rabbitmq_erlang_cookie
+    
+    secrets:
+      - rabbitmq_password
+      - rabbitmq_erlang_cookie
+    
+    expose:
+      - "5672"  # ✅ Management UI NICHT exposed!
+    
+    volumes:
+      - ${VOLUME_RABBITMQ}:/var/lib/rabbitmq
+      - ./config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./config/rabbitmq-definitions.json:/etc/rabbitmq/definitions.json:ro
+    
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    restart: unless-stopped
+    
+    networks:
+      - ${NETWORK_BACKEND}
+    
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
 
   # ==========================================
@@ -107,75 +296,213 @@ services:
 
   loki:
     image: docker.io/grafana/loki:2.9.0
-    container_name: loki-prod
     ports:
-      - "3100:3100"
+      - "3100"
     volumes:
-      - ./config/loki.prod.yaml:/etc/loki/local-config.yaml
-      - loki-data:/loki
+      - ./config/loki.prod.yaml:/etc/loki/local-config.yaml:ro
+      - ${VOLUME_LOKI}:/loki
+    
     command: -config.file=/etc/loki/local-config.yaml
+    
     restart: unless-stopped
+    
+    networks:
+      - ${NETWORK_BACKEND}
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
-        max-file: "5"
-    networks:
-      - ${NETWORK_BACKEND}
+        max-file: "3"
 
   promtail:
     image: docker.io/grafana/promtail:2.9.0
-    container_name: promtail-prod
+    
     volumes:
-      - /run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
-      - ./config/promtail.yaml:/etc/promtail/config.yml
+      # ✅ System socket für Production
+      - /run/podman/podman.sock:/var/run/docker.sock:ro
+      - ./config/promtail.yaml:/etc/promtail/config.yml:ro
+    
     command: -config.file=/etc/promtail/config.yml
+    
+    user: "0"  # Root für socket access
+    
     restart: unless-stopped
+    
+    depends_on:
+      - loki
+    
+    networks:
+      - ${NETWORK_BACKEND}
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
-        max-file: "5"
-    depends_on:
-      - loki
-    networks:
-      - ${NETWORK_BACKEND}
+        max-file: "3"
 
   grafana:
     image: docker.io/grafana/grafana:10.0.0
-    container_name: grafana-prod
-    ports:
-      - "3000:3000"
+    
+    expose:
+      - "3000"  # ✅ Nur intern, NGINX/Traefik macht SSL!
+    
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme123}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD_FILE=/run/secrets/grafana_password
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SERVER_ROOT_URL=https://${DOMAIN:-localhost}/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      # ✅ Security
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=strict
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+    
+    secrets:
+      - grafana_password
+    
     volumes:
-      - grafana-data:/var/lib/grafana
-      - ./config/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ${VOLUME_GRAFANA}:/var/lib/grafana
+      - ./config/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./config/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+    
     restart: unless-stopped
+    
+    depends_on:
+      - loki
+    
+    networks:
+      - ${NETWORK_BACKEND}
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
-        max-file: "5"
+        max-file: "3"
+
+  # ==========================================
+  # REVERSE PROXY (Production!)
+  # ==========================================
+
+  nginx:
+    image: docker.io/library/nginx:alpine
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+      - ./static:/usr/share/nginx/html:ro
+    
     depends_on:
-      - loki
+      - gateway
+      - grafana
+    
+    restart: unless-stopped
+    
     networks:
-      - ${NETWORK_BACKEND}
+      - ${NETWORK_FRONTEND}
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+# ==========================================
+# SECRETS (für Production!)
+# ==========================================
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  
+  rabbitmq_password:
+    file: ./secrets/rabbitmq_password.txt
+  
+  rabbitmq_erlang_cookie:
+    file: ./secrets/rabbitmq_erlang_cookie.txt
+  
+  grafana_password:
+    file: ./secrets/grafana_password.txt
+
+# ==========================================
+# NETWORKS
+# ==========================================
 
 networks:
   frontend:
+    name: ${NETWORK_FRONTEND}
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  
   backend:
+    name: ${NETWORK_BACKEND}
     driver: bridge
+    internal: true  # ✅ Backend nicht nach außen!
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# ==========================================
+# VOLUMES
+# ==========================================
 
 volumes:
-  loki-data:
-  grafana-data:
-  postgres_data_prod:  
+  postgres-data:
+    name: ${VOLUME_POSTGRES_PROD}
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /srv/postgresql/data
+  
+  rabbitmq-data:
+    name: ${VOLUME_RABBITMQ}
+    driver: local
+  
+  loki-data:
+    name: ${VOLUME_LOKI}
+    driver: local
+  
+  grafana-data:
+    name: ${VOLUME_GRAFANA}
+    driver: local
