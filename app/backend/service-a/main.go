@@ -41,8 +41,9 @@ func main() {
 	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json") // ← JSON Header!
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
+		fmt.Fprint(w, `{"status":"OK"}`) // ← JSON Response!
 	})
 
 	// Simple Server - NO middleware wrapper!

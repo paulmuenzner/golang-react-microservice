@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/app/shared/go/utils/logger"
@@ -10,18 +11,19 @@ import (
 // HEALTH CHECK HANDLER
 // ==========================================
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
-
+	// Extract request ID
 	requestID := ""
 	if id := r.Context().Value("request_id"); id != nil {
 		requestID = id.(string)
 	}
+	ip := getClientIP(r)
 
 	logger.InfoWithFields("Health Check", map[string]interface{}{
 		"request_id": requestID,
-		"ip":         r.RemoteAddr,
+		"ip":         ip,
 		"path":       r.URL.Path,
 	})
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("gateway OK"))
+	fmt.Fprint(w, `{"status":"OK"}`)
 }
