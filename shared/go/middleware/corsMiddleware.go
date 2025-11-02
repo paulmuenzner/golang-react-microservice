@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/app/shared/go/utils/logger"
 )
@@ -13,6 +15,23 @@ import (
 // CORSMiddleware handles Cross-Origin Resource Sharing
 // allowedOrigins: whitelist of allowed origins
 func CORSMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
+
+	// ==========================================
+	// FALLBACK: Load allowed origins from environment variable if not provided.
+	// This allows dynamic configuration via docker-compose or .env files
+	// without requiring code changes. Useful for different environments
+	// (development, staging, production) where allowed origins may vary.
+	// ==========================================
+	if len(allowedOrigins) == 0 {
+		originsStr := os.Getenv("CORS_ALLOWED_ORIGINS")
+		if originsStr != "" {
+			// Split comma-separated origins and trim whitespace
+			for _, origin := range strings.Split(originsStr, ",") {
+				allowedOrigins = append(allowedOrigins, strings.TrimSpace(origin))
+			}
+		}
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")

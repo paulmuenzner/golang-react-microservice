@@ -1,3 +1,5 @@
+# .gitignore
+
 # Go build artifacts
 **/tmp/
 **/bin/
@@ -24,8 +26,7 @@ go.work.sum
 Thumbs.db
 
 # Environment
-.env
-.env.local
+.env          
 
 # Logs
 *.log

@@ -68,6 +68,7 @@ A production-ready monorepo template for building microservices with Go, featuri
 - Go 1.25+
 - Podman
 - Make
+- .env.example -> .env
 
 
 ## Quick Start

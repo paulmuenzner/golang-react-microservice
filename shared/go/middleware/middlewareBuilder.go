@@ -15,12 +15,12 @@ func BuildMiddlewareStack(handler http.Handler) http.Handler {
 	// Define CORS whitelist
 	corsWhitelist := []string{
 		"http://localhost:3000",
+		"http://localhost:3001",
 		"http://localhost:8080",
 		"https://app.example.com",
 		"https://*.example.com",
 		"https://www.getpostman.com",
 		"https://web.postman.co",
-		"chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop",
 	}
 
 	if os.Getenv("ENVIRONMENT") == "development" {

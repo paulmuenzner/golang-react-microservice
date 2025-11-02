@@ -25,8 +25,8 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Root route - Gateway info
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/" {
 			http.NotFound(w, r)
 			return
 		}
@@ -45,11 +45,11 @@ func main() {
 	})
 
 	// Register service routes
-	mux.Handle("/service-a/", middleware.NewProxy("http://service-a:8080", "/service-a"))
-	mux.Handle("/service-b/", middleware.NewProxy("http://service-b:8080", "/service-b"))
+	mux.Handle("/api/service-a/", middleware.NewProxy("http://service-a:8080", "/api/service-a"))
+	mux.Handle("/api/service-b/", middleware.NewProxy("http://service-b:8080", "/api/service-b"))
 
 	// Health check endpoint
-	mux.HandleFunc("/health", middleware.HealthHandler)
+	mux.HandleFunc("/api/health", middleware.HealthHandler)
 
 	// Build complete middleware stack
 	handler := middleware.BuildMiddlewareStack(mux)
