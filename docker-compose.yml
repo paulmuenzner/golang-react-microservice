@@ -91,6 +91,8 @@ services:
       context: ./app/frontend/public
       dockerfile: Dockerfile
       target: dev  # ← Dev stage!
+      args:  # ← ADD THIS!
+        NODE_VERSION: ${NODE_VERSION}
     ports:
       - "${PORT_FRONTEND}:3000"
     volumes:
@@ -100,7 +102,7 @@ services:
       - /app/.next  # ← Cache
     environment:
       - NODE_ENV=development
-      
+
       # ✅ Client-side (Browser)
       - NEXT_PUBLIC_API_URL=http://localhost:${PORT_GATEWAY}/api
     
@@ -146,8 +148,6 @@ services:
       service-a:
         condition: service_healthy
       service-b:
-        condition: service_healthy
-      frontend:
         condition: service_healthy
     restart: unless-stopped
     stop_grace_period: 30s

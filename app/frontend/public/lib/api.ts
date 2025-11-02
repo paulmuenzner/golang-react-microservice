@@ -17,6 +17,13 @@
  * @returns API base URL (without trailing slash)
  */
 const getApiUrl = (): string => {
+  // ✅ DEBUG
+  console.log('🔍 DEBUG ENV:', {
+    'typeof window': typeof window,
+    'API_URL': process.env.API_URL,
+    'NEXT_PUBLIC_API_URL': process.env.NEXT_PUBLIC_API_URL,
+    'NODE_ENV': process.env.NODE_ENV,
+  })
   // Server-side rendering (Next.js server)
   // In Docker: uses internal Docker network (gateway:8080)
   if (typeof window === 'undefined') {

@@ -114,6 +114,32 @@ frontend-downgrade-next: ## Downgrade Next.js to 15.1.3 (stable)
 	@echo "✅ Downgraded to Next.js 15.1.3"
 
 # ==========================================
+# Frontend Debug
+# ==========================================
+
+frontend-logs: ## Show frontend container logs
+	@podman logs -f frontend-dev
+
+frontend-status: ## Check frontend container status
+	@echo "🔍 Frontend Container Status:"
+	@podman ps -a --filter name=frontend-dev --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+frontend-rebuild: ## Rebuild frontend image
+	@echo "🔨 Rebuilding frontend image..."
+	@make dev-down
+	@podman rmi golang-react-microservice_frontend 2>/dev/null || true
+	@podman-compose build frontend
+	@echo "✅ Frontend image rebuilt"
+
+frontend-restart: ## Restart frontend container
+	@podman restart frontend-dev
+	@echo "✅ Frontend restarted"
+	@podman logs -f frontend-dev
+
+frontend-shell-container: ## Open shell in frontend container
+	@podman exec -it frontend-dev sh
+
+# ==========================================
 # Docker Frontend Commands
 # ==========================================
 
